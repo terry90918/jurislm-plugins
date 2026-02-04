@@ -1,7 +1,7 @@
 {
   "name": "coolify",
   "description": "Coolify MCP server for managing self-hosted PaaS through Claude Code. Deploy applications, databases, and services with 35 optimized tools.",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "author": {
     "name": "Terry Chen"
   }

@@ -9,7 +9,7 @@
       "name": "hetzner",
       "source": "./plugins/hetzner",
       "description": "Hetzner Cloud MCP server for managing servers, volumes, firewalls, and SSH keys",
-      "version": "1.0.3",
+      "version": "1.0.4",
       "author": {
         "name": "Terry Chen"
       }
@@ -18,7 +18,7 @@
       "name": "coolify",
       "source": "./plugins/coolify",
       "description": "Coolify MCP server for managing self-hosted PaaS with 35 optimized tools",
-      "version": "1.0.3",
+      "version": "1.0.4",
       "author": {
         "name": "Terry Chen"
       }
