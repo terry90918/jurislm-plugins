@@ -13,6 +13,15 @@
       "author": {
         "name": "Terry Chen"
       }
+    },
+    {
+      "name": "coolify",
+      "source": "./plugins/coolify",
+      "description": "Coolify MCP server for managing self-hosted PaaS with 35 optimized tools",
+      "version": "1.0.0",
+      "author": {
+        "name": "Terry Chen"
+      }
     }
   ]
 }
