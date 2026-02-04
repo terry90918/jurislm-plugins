@@ -62,6 +62,62 @@ coolify_deploy with force=true
 - 確保健康檢查端點回傳 200
 - 增加啟動延遲時間
 
+## Service 配置問題
+
+### Service FQDN 無法更新
+
+**症狀**：使用 `coolify_service update` 嘗試更新 FQDN 時失敗或無效
+
+**根本原因**：
+- Coolify API 的 `UpdateServiceRequest` **不支援直接更新 FQDN**
+- Service FQDN 由 `docker_compose_raw` 中的 Traefik labels 控制
+- 僅支援更新：`name`, `description`, `docker_compose_raw`
+
+**解決方案**：
+
+1. **透過 Coolify Web UI**（推薦）
+   - 進入 Service 設定頁面
+   - 直接修改 Domain 欄位
+   - 重新部署 Service
+
+2. **透過 API 修改 docker_compose_raw**
+   ```
+   1. 取得 Service 詳情：coolify_get_service
+   2. 找到 docker_compose_raw 中的 Traefik labels
+   3. 修改相關 labels：
+      - traefik.http.routers.*.rule=Host(`new-domain.com`)
+      - caddy_0=https://new-domain.com
+   4. 使用 coolify_service update 更新 docker_compose_raw
+   5. 重啟 Service
+   ```
+
+3. **刪除重建**（最簡單）
+   - 如果配置複雜，考慮刪除 Service 後重新建立
+   - 建立時使用正確的 FQDN
+
+### Service 內 Application 與獨立 Application 混淆
+
+**症狀**：使用 `coolify_application update` 找不到 Application
+
+**原因**：
+- Service 內的 containers（如 Ghost、MySQL）**不是獨立 Application**
+- 它們是 Service 的子組件，沒有獨立的 Application UUID
+- `coolify_list_applications` 不會列出 Service 內的 containers
+
+**診斷**：
+```
+# 檢查資源類型
+coolify_infrastructure_overview
+
+# 如果是 Service，使用 Service 相關工具
+coolify_get_service <uuid>
+coolify_list_services
+```
+
+**正確做法**：
+- 使用 `coolify_service` 系列工具管理 Service
+- 使用 `coolify_application` 系列工具管理獨立 Application
+
 ## 網路問題
 
 ### 無法存取應用程式

@@ -187,6 +187,17 @@
 ### coolify_update_service
 更新服務設定。
 
+**支援的欄位**：
+- `name` - 服務名稱
+- `description` - 服務描述
+- `docker_compose_raw` - Docker Compose 配置
+
+⚠️ **重要限制**：
+- **不支援直接更新 FQDN/Domain**
+- Service FQDN 由 `docker_compose_raw` 中的 Traefik labels 控制
+- 要更新 FQDN，需修改 `docker_compose_raw` 中的相關 labels 後重新部署
+- 或透過 Coolify Web UI 直接修改 Domain 設定
+
 ### coolify_delete_service
 刪除服務。
 

@@ -22,6 +22,30 @@ Coolify 是一個開源的自託管 PaaS（Platform as a Service），類似於 
 | 部署 | 列表、部署、取消、狀態 |
 | 批量操作 | 重啟專案、環境變數更新、全面停止 |
 
+## 核心概念：Application vs Service
+
+理解 Application 和 Service 的差異對於正確使用 Coolify 至關重要：
+
+| 類型 | 說明 | FQDN 更新 |
+|------|------|-----------|
+| **Application** | 單一應用程式（Git/Dockerfile/Docker Image） | ✅ 可透過 API 更新 |
+| **Service** | Docker Compose 組合（含多個容器） | ⚠️ 需修改 docker_compose_raw |
+
+### Service 的特性
+
+- Service 是一組相關容器的組合（如 Ghost + MySQL）
+- Service 內的 Applications 不是獨立 Application，不能單獨更新 FQDN
+- Service FQDN 由 `docker_compose_raw` 中的 Traefik labels 控制
+- 更新 Service FQDN 的正確方法：
+  1. 修改 `docker_compose_raw` 中的 Traefik labels
+  2. 使用 `coolify_service update` 更新
+  3. 重啟 Service
+
+### 常見誤區
+
+❌ 嘗試用 `coolify_application update` 更新 Service 內的 App FQDN
+✅ 正確做法：更新整個 Service 的 `docker_compose_raw`
+
 ## 智能查詢功能
 
 除了 UUID，MCP 支援人類易讀識別符：
