@@ -9,7 +9,7 @@ Coolify 是一個開源的自託管 PaaS（Platform as a Service），類似於 
 
 ## MCP 工具概覽
 
-@masonator/coolify-mcp 提供 35 個最佳化工具，分為以下類別：
+@jurislm/coolify-mcp 提供 35 個最佳化工具，分為以下類別：
 
 | 類別 | 功能 |
 |------|------|
@@ -124,5 +124,5 @@ export COOLIFY_BASE_URL="https://your-coolify-instance.com"
 ### 外部連結
 
 - [Coolify 官方文件](https://coolify.io/docs)
-- [@masonator/coolify-mcp GitHub](https://github.com/StuMason/coolify-mcp)
+- [@jurislm/coolify-mcp GitHub](https://github.com/terry90918/coolify-mcp)
 - [Coolify API 文件](https://coolify.io/docs/api)
