@@ -9,7 +9,7 @@
       "name": "hetzner",
       "source": "./plugins/hetzner",
       "description": "Hetzner Cloud MCP server for managing servers, volumes, firewalls, and SSH keys",
-      "version": "1.0.2",
+      "version": "1.0.3",
       "author": {
         "name": "Terry Chen"
       }
