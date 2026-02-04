@@ -1,7 +1,7 @@
 {
   "name": "hetzner",
   "description": "Hetzner Cloud MCP server for managing cloud servers, volumes, firewalls, and SSH keys through Claude Code.",
-  "version": "1.0.4",
+  "version": "1.1.0",
   "author": {
     "name": "Terry Chen"
   }
