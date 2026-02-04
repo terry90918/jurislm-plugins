@@ -1,0 +1,18 @@
+{
+  "name": "terrychen-plugins",
+  "owner": {
+    "name": "Terry Chen",
+    "email": "zxtw17985321@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "hetzner",
+      "source": "./plugins/hetzner",
+      "description": "Hetzner Cloud MCP server for managing servers, volumes, firewalls, and SSH keys",
+      "version": "1.0.0",
+      "author": {
+        "name": "Terry Chen"
+      }
+    }
+  ]
+}
