@@ -3,7 +3,7 @@
     "command": "npx",
     "args": ["-y", "hetzner-mcp-server"],
     "env": {
-      "HCLOUD_TOKEN": "${HCLOUD_TOKEN}"
+      "HETZNER_API_TOKEN": "${HETZNER_API_TOKEN}"
     }
   }
 }
