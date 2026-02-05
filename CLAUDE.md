@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-This is a Claude Code Plugin Marketplace (`jurislm-plugins-official`) containing plugins that integrate MCP (Model Context Protocol) servers with Claude Code.
+This is a Claude Code Plugin Marketplace (`jurislm-plugins`) containing plugins that integrate MCP (Model Context Protocol) servers with Claude Code.
 
 ## Structure
 

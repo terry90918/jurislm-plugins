@@ -13,7 +13,7 @@ Claude Code 外掛市集，提供雲端基礎設施管理工具。
 安裝外掛：
 
 ```
-/plugin install hetzner@jurislm-plugins-official
+/plugin install hetzner@jurislm-plugins
 ```
 
 ## 可用外掛
