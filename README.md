@@ -7,7 +7,7 @@ Claude Code 外掛市集，提供雲端基礎設施管理工具。
 新增市集：
 
 ```
-/plugin marketplace add terry90918/claude-plugins
+/plugin marketplace add terry90918/jurislm-plugins
 ```
 
 安裝外掛：
