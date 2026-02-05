@@ -1,26 +1,59 @@
 # Hetzner Cloud Plugin
 
-Hetzner Cloud MCP server for Claude Code.
+透過 Claude Code 管理 Hetzner Cloud 基礎設施的 MCP 伺服器。
 
-## Features
+## 功能
 
-- List, create, and manage Hetzner Cloud servers
-- Create, attach, detach, and resize volumes
-- Manage firewall rules
-- Create and manage SSH keys
-- View available images, server types, and locations
-- Power on/off and reboot servers
+### 伺服器管理（7 個工具）
+- 列出、查詢、建立、刪除伺服器
+- 開機、關機、重新啟動
 
-## Requirements
+### SSH 金鑰管理（4 個工具）
+- 列出、查詢、建立、刪除 SSH 金鑰
 
-Set your Hetzner Cloud API token as an environment variable:
+### 參考資料（3 個工具）
+- 查看伺服器類型（規格與價格）
+- 查看可用映像檔（作業系統）
+- 查看資料中心位置
 
-```bash
-export HCLOUD_TOKEN="your_hetzner_api_token"
+## 限制
+
+此 MCP 伺服器**不支援**：
+- Volumes（磁碟區）管理
+- Firewalls（防火牆）管理
+- Projects（專案）管理
+- 帳單相關操作
+- 進階網路功能
+
+## 安裝
+
+```
+/plugin install hetzner@jurislm-plugins
 ```
 
-Get your API token from [Hetzner Cloud Console](https://console.hetzner.cloud/) → Project → Security → API Tokens.
+## 設定
 
-## Credits
+1. 從 [Hetzner Cloud Console](https://console.hetzner.cloud/) → 專案 → Security → API Tokens 取得 API Token
 
-Uses [hetzner-mcp-server](https://github.com/nityeshaga/hetzner-mcp-server) npm package.
+2. 新增至 `~/.zshenv`：
+   ```bash
+   export HETZNER_API_TOKEN="your_token_here"
+   ```
+
+3. 重新啟動 Claude Code
+
+## 環境變數
+
+| 變數 | 必需 | 說明 |
+|------|------|------|
+| `HETZNER_API_TOKEN` | ✓ | Hetzner Cloud API 認證令牌 |
+
+## 相關連結
+
+- [hetzner-mcp-server](https://github.com/nityeshaga/hetzner-mcp-server)（npm 套件）
+- [Hetzner Cloud Console](https://console.hetzner.cloud/)
+- [Hetzner Cloud API 文件](https://docs.hetzner.cloud/)
+
+## 授權
+
+MIT

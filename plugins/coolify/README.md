@@ -70,7 +70,7 @@
 ## 相關連結
 
 - [Coolify 官方文件](https://coolify.io/docs)
-- [@jurislm/coolify-mcp](https://github.com/terry90918/coolify-mcp) (forked with bug fixes)
+- [jurislm-coolify-mcp](https://github.com/terry90918/coolify-mcp)（forked from @masonator/coolify-mcp）
 - [Coolify API 文件](https://coolify.io/docs/api)
 
 ## 授權
