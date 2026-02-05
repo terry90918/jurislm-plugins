@@ -2,6 +2,18 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Commands
+
+```bash
+# 驗證 JSON 格式
+cat .claude-plugin/marketplace.json | jq .
+cat plugins/<name>/.claude-plugin/plugin.json | jq .
+
+# 檢查版本是否同步
+grep -A1 '"name": "<plugin>"' .claude-plugin/marketplace.json
+cat plugins/<name>/.claude-plugin/plugin.json | grep version
+```
+
 ## Repository Overview
 
 This is a Claude Code Plugin Marketplace (`jurislm-plugins`) containing plugins that integrate MCP (Model Context Protocol) servers with Claude Code.
@@ -55,3 +67,16 @@ Plugins using MCP servers typically require API tokens. Use `${VAR_NAME}` syntax
 Current plugin requirements:
 - **hetzner**: `HETZNER_API_TOKEN` (not `HCLOUD_TOKEN`)
 - **coolify**: `COOLIFY_ACCESS_TOKEN`, `COOLIFY_BASE_URL`
+
+## Current Plugins
+
+| Plugin | Version | npm Package |
+|--------|---------|-------------|
+| hetzner | 1.2.0 | hetzner-mcp-server |
+| coolify | 1.3.1 | jurislm-coolify-mcp |
+
+## Gotchas
+
+- **版本號必須同步**：`marketplace.json` 和 `plugin.json` 的版本必須一致
+- **環境變數名稱**：hetzner 用 `HETZNER_API_TOKEN`（不是 `HCLOUD_TOKEN`）
+- **description 語言**：使用繁體中文
