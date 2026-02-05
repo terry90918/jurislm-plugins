@@ -54,3 +54,4 @@ Plugins using MCP servers typically require API tokens. Use `${VAR_NAME}` syntax
 
 Current plugin requirements:
 - **hetzner**: `HETZNER_API_TOKEN` (not `HCLOUD_TOKEN`)
+- **coolify**: `COOLIFY_ACCESS_TOKEN`, `COOLIFY_BASE_URL`
