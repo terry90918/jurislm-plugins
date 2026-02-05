@@ -8,7 +8,7 @@
     {
       "name": "hetzner",
       "source": "./plugins/hetzner",
-      "description": "Hetzner Cloud MCP server for managing servers and SSH keys (14 tools)",
+      "description": "Hetzner Cloud MCP 伺服器，管理伺服器與 SSH 金鑰（14 個工具）",
       "version": "1.1.0",
       "author": {
         "name": "Terry Chen"
@@ -17,7 +17,7 @@
     {
       "name": "coolify",
       "source": "./plugins/coolify",
-      "description": "Coolify MCP server for managing self-hosted PaaS with 35 optimized tools",
+      "description": "Coolify MCP 伺服器，管理自託管 PaaS（35 個最佳化工具）",
       "version": "1.3.0",
       "author": {
         "name": "Terry Chen"
