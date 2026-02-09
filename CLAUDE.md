@@ -78,6 +78,7 @@ Current plugin requirements:
 | stock | 1.0.0 | Skill Only | TWSE/Yahoo API + 投資組合 + E2E 測試 |
 | jurislm | 1.0.0 | Skill Only | Unified Agent + CLI + 資料同步 + 法律分類（3 skills） |
 | github-release | 1.0.0 | Skill Only | Release Please + Claude Code Review + Release Notes |
+| lessons-learned | 1.0.0 | Skill Only | 33+ 經驗模式：診斷除錯、測試、基礎設施、安全、架構 |
 
 ## Gotchas
 
