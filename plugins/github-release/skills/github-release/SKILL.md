@@ -225,6 +225,19 @@ changelog:
 | terry90918/stock | ✅ 4 檔齊全 |
 | terry90918/lawyer-app | ✅ 4 檔齊全 |
 
+## PR 必做項目
+
+建立 PR 時**必須**設定 labels 和 assignee，否則 Release Notes 無法正確分類：
+
+```bash
+gh pr edit <num> --add-label "feat,fix,docs"    # 至少一個 label
+gh pr edit <num> --add-assignee terry90918       # 指定負責人
+```
+
+**可用 labels**：`feat`, `fix`, `docs`, `refactor`, `test`, `ci`, `chore`, `perf`, `breaking`, `major`, `minor`, `patch`
+
+這些 labels 對應 `.github/release.yml` 的分類規則，確保 Release Notes 自動歸類正確。
+
 ## 注意事項
 
 - `release-type: node` 適用於有 `package.json` 的專案；其他語言請改為對應類型（如 `python`、`go` 等）
