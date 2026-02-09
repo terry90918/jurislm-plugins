@@ -5,7 +5,7 @@ description: This skill should be used when encountering bugs, debugging issues,
 
 # 跨專案開發經驗模式庫
 
-從實際踩坑中提煉的 33+ 個關鍵教訓與改進方案，按主題分類。每個模式包含問題描述、根因分析、正確解法。
+從實際踩坑中提煉的 42+ 個關鍵教訓與改進方案，按主題分類。每個模式包含問題描述、根因分析、正確解法。
 
 ---
 
@@ -477,3 +477,131 @@ finally {
 **流程**：`sanitizeContent()` → 結構化 JSON → Zod 驗證 → 不執行 LLM 回應的系統操作。
 
 > 來源：JurisLM security review
+
+---
+
+## H. 雲端遷移與環境配置（6 個模式）
+
+### 模式 37：dotenv 路徑計算錯誤 — 隱性 bug
+
+**問題**：`join(__dirname, "../../..", ".env.shared")` 路徑錯誤（多了一層 `..`），但因為 `existsSync` 檢查 + 靜默跳過，`.env.shared` 從未被載入。所有 env vars 都用了 fallback 值，測試表面上能通過。
+
+**根因**：`__dirname` 在 `jurislm_app/tests/` 下，往上 3 層到了 `Documents/Github/`（而非專案根目錄）。
+
+**為什麼危險**：
+- 沒有錯誤訊息（`if (existsSync)` 靜默跳過）
+- 測試用 fallback mock URL，看起來正常
+- 切換到雲端 DB 後，fallback URL 連線失敗才暴露
+
+**教訓**：
+1. dotenv 載入失敗時應 **log warning**，不要完全靜默
+2. 修改 `__dirname` 相對路徑後，用 `console.log(envPath)` 驗證實際路徑
+3. E2E 測試應有一個「連線驗證」step 確認 DB 真正可達
+
+> 來源：JurisLM 雲端 DB 遷移（2026-02-09）
+
+### 模式 38：Worktree 環境變數同步陷阱
+
+**問題**：Git worktree 各自有獨立的 `.env.shared`（在 `.gitignore` 中），credentials 不會自動同步。新 worktree 或長期未使用的 worktree 可能保留 placeholder 值。
+
+**症狀**：
+- `ANTHROPIC_API_KEY=your-anthropic-api-key-here` → Zod 驗證失敗
+- `TOKEN_ENCRYPTION_KEY=CHANGE_ME_USE_OPENSSL_RAND_HEX_32` → 非 64 位 hex
+- `GOOGLE_CLIENT_ID=your-google-client-id-here` → OAuth 登入失敗
+
+**教訓**：
+1. 切換 worktree 後第一件事：`diff` 比對 `.env.shared` 與主 worktree
+2. 敏感值不要用描述性 placeholder（如 `your-xxx-here`），用格式正確但無效的值（如 `sk-ant-test-000...`）
+3. 考慮建立 `scripts/sync-env.sh` 自動從主 worktree 複製 credentials
+
+```bash
+# 快速比對
+diff <(grep -E '^[A-Z]' /path/to/main/.env.shared) <(grep -E '^[A-Z]' .env.shared)
+```
+
+> 來源：JurisLM plan-b worktree 驗收（2026-02-09）
+
+### 模式 39：Ollama model tag 必須精確匹配
+
+**問題**：`.env.shared` 設定 `OLLAMA_MODEL=ministral-3:latest`，但 Ollama 安裝的是 `ministral-3:8b`。`:latest` tag 不一定存在。
+
+**症狀**：頁面頂部顯示「Ollama 不可用：找不到模型 ministral-3:latest」。
+
+**驗證方式**：
+```bash
+ollama list | grep ministral
+# 輸出：ministral-3:8b    abc123    4.1 GB
+```
+
+**教訓**：
+1. env var 中的 model 名稱必須與 `ollama list` 完全一致（含 tag）
+2. `:latest` 不是萬用 tag — 取決於模型發布者是否有設定
+3. 部署前驗證：`curl http://localhost:11434/api/tags | jq '.models[].name'`
+
+> 來源：JurisLM 本地開發驗收（2026-02-09）
+
+### 模式 40：OAuth redirect_uri 與 dev server port 必須一致
+
+**問題**：Google OAuth Console 只註冊了 `http://localhost:3000/api/auth/callback/google`，但 dev server 跑在 port 3002 → `redirect_uri_mismatch`。
+
+**三個必須一致的值**：
+1. Google Console 的 Authorized redirect URIs
+2. `NEXTAUTH_URL` 環境變數（如 `http://localhost:3000`）
+3. Dev server 實際監聽的 port（`next dev --port 3000`）
+
+**教訓**：
+1. 非標準 port 開發時，先確認 OAuth provider 的 redirect URI 設定
+2. `NEXTAUTH_URL` 改了 port，OAuth callback URL 也會跟著變
+3. 如果 port 被佔用，kill 佔用程序比改 OAuth 設定快
+
+> 來源：JurisLM plan-b port 3002 驗收失敗（2026-02-09）
+
+### 模式 41：Getter 環境變數優先策略 — 一處改動修 N 個檔案
+
+**策略**：當多個消費者都透過同一個 getter（如 `worktreeConfig.syncDatabaseUrl`）取得設定值時，修改 getter 讓它優先讀取環境變數，所有消費者自動切換。
+
+**案例**：11 個檔案都使用 `worktreeConfig.syncDatabaseUrl`，只改 getter 一處：
+
+```typescript
+get syncDatabaseUrl(): string {
+  const envUrl = process.env.DATABASE_URL;
+  if (envUrl) {
+    return envUrl.replace(/^postgresql\+\w+:\/\//, "postgresql://");
+  }
+  return `postgresql://...@localhost:${this._ports.postgres}/jurislm_db`;
+}
+```
+
+**適用條件**：
+- 多個消費者使用同一個配置 getter
+- 需要從「硬編碼預設值」切換到「環境變數優先」
+- 想保留 localhost fallback（本地開發仍可用）
+
+> 來源：JurisLM Docker DB → 雲端遷移（2026-02-09）
+
+### 模式 42：Docker 到雲端 DB 遷移清單
+
+**遷移步驟**（已驗證）：
+
+1. **修改配置 getter**：env var 優先 → localhost fallback
+2. **更新 `.env.shared`**：指向雲端 DB URL
+3. **移除 CLOUD_* 區分邏輯**：不再需要本地/雲端分開的 env vars
+4. **改寫 `db reset`**：psql-based（`DROP SCHEMA CASCADE` + migrations）取代 Docker compose
+5. **刪除 Docker 檔案**：`docker-compose.yml`、`reset.sh` 等
+6. **更新測試**：fallback URL、dotenv 路徑、mock 值
+7. **更新文件**：`CLAUDE.md` Quick Start
+
+**Migration 對全新 DB 跑不過的解法**：
+- 當歷史 migration 有 breaking schema changes（如 `users.id` 從 INTEGER 改 TEXT）
+- 全新 DB 跑完整 migration chain 會失敗
+- 解法：`pg_dump --schema-only` 從既有 DB 匯入 + 記錄所有 migration 為已套用
+
+**驗證清單**：
+```bash
+bun run typecheck    # 型別檢查
+bun run lint         # Lint
+bun run test         # 測試（含 E2E 連雲端 DB）
+# 瀏覽器驗收：登入、對話、RAG 檢索、側邊欄
+```
+
+> 來源：JurisLM 9-phase 雲端遷移計畫（2026-02-09）
