@@ -60,15 +60,15 @@ import { s3Storage } from '@payloadcms/storage-s3'
 export default buildConfig({
   plugins: [
     // 使用 conditional spread 讓 S3 可選
-    ...(process.env.S3_BUCKET
+    ...(process.env.S3_ACCESS_KEY_ID
       ? [
           s3Storage({
             collections: { media: true },
-            bucket: process.env.S3_BUCKET,
+            bucket: requireEnv('S3_BUCKET'),
             config: {
               credentials: {
-                accessKeyId: process.env.S3_ACCESS_KEY!,
-                secretAccessKey: process.env.S3_SECRET_KEY!,
+                accessKeyId: requireEnv('S3_ACCESS_KEY_ID'),
+                secretAccessKey: requireEnv('S3_SECRET_ACCESS_KEY'),
               },
               endpoint: process.env.S3_ENDPOINT,
               region: process.env.S3_REGION || 'us-east-1',
@@ -82,6 +82,36 @@ export default buildConfig({
 ```
 
 **陷阱**：S3 未配置時，上傳功能 fallback 到本地檔案系統。生產環境應配置 S3 避免容器重建時丟失檔案。
+
+### importMap 與 S3 Plugin 白屏陷阱（嚴重）
+
+**問題**：Admin UI 完全白屏（HTML 載入但 React 不渲染任何內容）。
+
+**根因**：
+1. S3 plugin 使用 conditional spread，根據 `S3_ACCESS_KEY_ID` env var 是否 truthy 決定是否載入
+2. S3 plugin 載入時會註冊 `@payloadcms/storage-s3/client#S3ClientUploadHandler` 客戶端元件
+3. `importMap.js` 是在 `next build` 時生成的，必須包含所有活躍 plugin 的客戶端元件
+4. **如果 build 環境的 S3 env var 狀態與 runtime 不同**（例如 build 時沒設 → importMap 不含 S3；runtime 有設 → S3 plugin 載入），React 找不到元件 → **整個 Admin UI 靜默失敗**
+
+**觸發場景**：
+- 本地 build（S3_ACCESS_KEY_ID 為空）→ 部署到 Coolify（S3_ACCESS_KEY_ID=placeholder）
+- importMap.js 不含 S3 元件 → S3 plugin 嘗試註冊找不到的元件 → 白屏
+
+**解法**：
+1. **不要在 Coolify 設定 placeholder S3 env vars**——留空或完全不設定
+2. 確保 build 環境與 runtime 環境的 S3 env var 狀態一致
+3. 如果需要 S3，在 build time 也要有正確的 S3 env vars，或在 build 後執行 `payload generate:importmap`
+
+**診斷方法**：
+```bash
+# 檢查 server log 是否有 importMap 警告
+# 關鍵錯誤：
+# "getFromImportMap: PayloadComponent not found in importMap"
+# "@payloadcms/storage-s3/client#S3ClientUploadHandler"
+
+# 檢查 RSC payload 是否有 redirect 而非實際 HTML
+curl -s https://your-domain.com/admin | grep "NEXT_REDIRECT"
+```
 
 ## Admin UI CSS 問題（Turbopack）
 

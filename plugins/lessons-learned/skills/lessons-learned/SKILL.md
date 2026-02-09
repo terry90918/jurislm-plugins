@@ -310,6 +310,45 @@ function readSettings(): Settings {
 
 > 來源：JurisLM 資料庫遷移
 
+### 模式 34：Placeholder 環境變數觸發條件式功能
+
+**問題**：在 Coolify/CI 中設定 `ENV_VAR=placeholder` 作為佔位提醒，但代碼用 `if (process.env.ENV_VAR)` 做條件判斷，truthy 值觸發功能載入，導致不可預期的行為。
+
+**案例**：Payload CMS 的 S3 plugin 使用 `process.env.S3_ACCESS_KEY_ID` 條件載入。設定 `S3_ACCESS_KEY_ID=placeholder` 導致 S3 plugin 載入 → 註冊客戶端元件 → importMap.js 中找不到 → Admin UI 白屏。
+
+**教訓**：
+1. **不要用 placeholder env vars** — 要麼設正確值，要麼完全不設
+2. 條件式功能的 env var 邏輯要理解清楚：truthy/falsy 的邊界
+3. 部署前檢查所有 env vars 的值是否符合預期
+
+> 來源：lawyer-app Payload Admin 白屏事件（2026-02-09）
+
+### 模式 35：Nixpacks Package Manager 偵測
+
+**問題**：repo 中同時存在 `package-lock.json` 和 `bun.lock`，Nixpacks 偵測到 `package-lock.json` 自動使用 `npm ci`，導致 build 失敗。
+
+**解法**：
+1. 確保 repo 中只有一種 lock file
+2. 將不用的 lock file 加入 `.gitignore`
+3. 用 `nixpacks.toml` 明確指定 package manager（不要用 `NIXPACKS_*_CMD` env vars，會導致 CLI 解析錯誤）
+
+> 來源：lawyer-app Coolify 部署（2026-02-09）
+
+### 模式 36：Build-time 與 Runtime 環境差異
+
+**問題**：Next.js + Payload CMS 在 `next build` 時生成 `importMap.js`，此檔案映射所有 plugin 的客戶端元件。如果 build 環境的 env vars 與 runtime 不同，importMap 可能缺少（或多出）某些元件映射。
+
+**影響**：
+- build 時 S3 env var 為空 → importMap 不含 S3 元件
+- runtime 時 S3 env var 有值 → S3 plugin 載入 → 嘗試使用不存在的元件 → React 靜默失敗 → 白屏
+
+**教訓**：
+1. **Build-time 和 runtime 的 conditional plugin env vars 必須一致**
+2. 如果 plugin 在 runtime 才需要，確保 build 時也不載入（env var 也不設）
+3. 診斷白屏時，檢查 server log 的 `getFromImportMap: PayloadComponent not found` 警告
+
+> 來源：lawyer-app Payload Admin 白屏事件（2026-02-09）
+
 ---
 
 ## D. 安全與錯誤處理（4 個模式）

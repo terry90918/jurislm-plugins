@@ -22,6 +22,29 @@ Nixpacks 是 Coolify 預設的建置系統，自動偵測專案類型並建置�
 - 快速建置
 - 小型映像檔
 
+#### Nixpacks + Bun 配置
+
+Nixpacks 根據 lock file 偵測 package manager。使用 bun 時：
+
+1. 確保 repo 中只有 `bun.lock`（移除 `package-lock.json`）
+2. 建立 `nixpacks.toml` 明確指定 bun：
+
+```toml
+[phases.setup]
+nixPkgs = ["bun"]
+
+[phases.install]
+cmds = ["bun install"]
+
+[phases.build]
+cmds = ["bun run build"]
+
+[start]
+cmd = "bun run start"
+```
+
+**注意**：不要使用 `NIXPACKS_BUILD_CMD` / `NIXPACKS_INSTALL_CMD` 環境變數，會導致 CLI 解析錯誤。
+
 ### Dockerfile
 
 適用於需要完全控制建置過程的專案。

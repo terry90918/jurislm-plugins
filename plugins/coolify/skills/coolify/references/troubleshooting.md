@@ -318,6 +318,65 @@ truncate -s 0 /var/lib/docker/containers/*/*-json.log
 2. 確認資源存取權限
 3. 聯繫管理員
 
+## Nixpacks 建置問題
+
+### Package Manager 偵測錯誤
+
+**症狀**：Nixpacks 使用 npm 而非 bun/pnpm，導致 `npm ci` 失敗
+
+**根本原因**：Nixpacks 根據 lock file 偵測 package manager：
+- `package-lock.json` → npm
+- `bun.lock` → bun
+- `pnpm-lock.yaml` → pnpm
+- `yarn.lock` → yarn
+
+如果 repo 中同時存在 `package-lock.json` 和 `bun.lock`，Nixpacks 可能優先選擇 npm。
+
+**解法**：
+1. 確保 repo 中只有一種 lock file（例如 `bun.lock`）
+2. 在 `.gitignore` 中排除不需要的 lock file
+3. 使用 `nixpacks.toml` 明確指定 package manager
+
+### NIXPACKS_*_CMD 環境變數陷阱
+
+**症狀**：設定 `NIXPACKS_BUILD_CMD=bun run build` 導致 CLI 解析錯誤
+
+**錯誤訊息**：`Found argument 'run' which wasn't expected`
+
+**根本原因**：Nixpacks CLI 將 env var 值中的空格分隔字串解析為多個 CLI arguments
+
+**解法**：不要使用 `NIXPACKS_*_CMD` env vars，改用 `nixpacks.toml`：
+
+```toml
+[phases.setup]
+nixPkgs = ["bun"]
+
+[phases.install]
+cmds = ["bun install"]
+
+[phases.build]
+cmds = ["bun run build"]
+
+[start]
+cmd = "bun run start"
+```
+
+### Placeholder 環境變數觸發條件式功能
+
+**症狀**：設定 `S3_ACCESS_KEY_ID=placeholder` 導致應用程式行為異常
+
+**根本原因**：代碼使用 `if (process.env.S3_ACCESS_KEY_ID)` 做條件判斷，任何 truthy 值（包括 "placeholder"）都會觸發功能載入
+
+**影響**：
+- 條件式載入的 plugin/module 被意外啟用
+- 啟用的功能因缺少真實配置而失敗
+- 可能導致整個應用程式無法正常運作（如 Payload Admin 白屏）
+
+**解法**：
+1. 不要設定 placeholder env vars——要麼設正確值，要麼完全不設
+2. 如果需要「佔位」提醒，用 comment 而非實際值
+3. 定期檢查 Coolify 中是否有 placeholder 值的 env vars
+
 ## 常見錯誤訊息
 
 | 錯誤 | 原因 | 解決方案 |
@@ -328,6 +387,8 @@ truncate -s 0 /var/lib/docker/containers/*/*-json.log
 | `No space left on device` | 磁碟滿 | 清理空間 |
 | `Container killed` | OOM | 增加記憶體 |
 | `Build context too large` | .dockerignore 缺失 | 新增 .dockerignore |
+| `Found argument 'run'` | NIXPACKS_*_CMD 解析錯誤 | 改用 nixpacks.toml |
+| `npm ci` 失敗 | Nixpacks 用錯 package manager | 移除多餘 lock file |
 
 ## MCP Server 遷移問題
 

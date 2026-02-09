@@ -119,13 +119,28 @@ export default function robots() {
 
 **解法**：加入 `NODE_OPTIONS=--max-old-space-size=4096`
 
-### Admin UI 空白
+### Admin UI 空白（CSS 問題）
 
 **症狀**：Admin 頁面載入但無樣式
 
 **原因**：Turbopack 不自動載入 Payload CSS
 
 **解法**：見 `references/payload-cms.md` → Admin UI CSS 問題
+
+### Admin UI 完全白屏（importMap 問題）
+
+**症狀**：Admin 頁面 HTML 載入（200 OK），但 React 不渲染任何元素。頁面完全空白，無 console error。
+
+**原因**：S3 plugin 的 env var 在 build time 與 runtime 狀態不一致，導致 `importMap.js` 不包含 S3 客戶端元件，但 runtime S3 plugin 已載入並嘗試使用該元件。
+
+**診斷**：
+1. 檢查 server log 是否有 `getFromImportMap: PayloadComponent not found`
+2. `curl -s https://site.com/admin | grep "NEXT_REDIRECT"` — 如果有 redirect 到 /admin/login 但 login 也白屏，則可能是 importMap 問題
+
+**解法**：
+1. 移除 Coolify 中所有 S3 placeholder env vars（確保 `S3_ACCESS_KEY_ID` 為空或不存在）
+2. 或者確保 build time 也有正確的 S3 env vars
+3. 見 `references/payload-cms.md` → importMap 與 S3 Plugin 白屏陷阱
 
 ### 文章圖片 404
 
@@ -136,6 +151,38 @@ export default function robots() {
 2. 容器重建導致本地檔案丟失
 
 **解法**：配置 S3 Storage（MinIO）
+
+## Nixpacks Bun 配置
+
+Lawyer App 使用 bun 作為 package manager。Coolify 使用 Nixpacks 建置時需要正確配置。
+
+### nixpacks.toml
+
+```toml
+[phases.setup]
+nixPkgs = ["bun"]
+
+[phases.install]
+cmds = ["bun install"]
+
+[phases.build]
+cmds = ["bun run build"]
+
+[start]
+cmd = "bun run start"
+```
+
+### 常見陷阱
+
+1. **package-lock.json 導致 Nixpacks 用 npm**：
+   - Nixpacks 偵測到 `package-lock.json` 會自動使用 `npm ci`
+   - 必須確保 repo 中沒有 `package-lock.json`（已加入 `.gitignore`）
+   - 只保留 `bun.lock`（bun 自動管理）
+
+2. **NIXPACKS_BUILD_CMD env var 解析錯誤**：
+   - 設定 `NIXPACKS_BUILD_CMD=bun run build` 會導致 Nixpacks CLI 誤將 `run` 當作 CLI argument
+   - 錯誤：`Found argument 'run' which wasn't expected`
+   - **不要用 NIXPACKS_*_CMD env vars**，改用 `nixpacks.toml` 檔案
 
 ## 回滾流程
 
