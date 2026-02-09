@@ -698,3 +698,32 @@ bun run test         # 測試（含 E2E 連雲端 DB）
 ```
 
 > 來源：JurisLM 9-phase 雲端遷移計畫（2026-02-09）
+
+### 模式 43：Payload CMS Production Migration — `push: true` 是 dev-only
+
+**問題**：Payload CMS 新 production DB 啟動後所有 table 不存在，runtime 報 `relation "users" does not exist`。盲目加 `push: true` 到 postgres adapter 無效。
+
+**根本原因**：
+- `push: true` 只在 `next dev`（development mode）有效，`next start`（production）**完全不觸發**
+- Production 必須使用 `prodMigrations` 讓 Payload 啟動時自動執行 migration
+
+**正確做法**：
+1. 產生 migration 檔案（`payload` CLI 在 Node.js 24 + bun 下壞掉，用程式化 API）：
+```bash
+bun -e "
+import { getPayload } from 'payload';
+import config from './payload.config.ts';
+const payload = await getPayload({ config });
+await payload.db.createMigration({ payload, migrationName: 'initial' });
+process.exit(0);
+"
+```
+2. Config 設定：`import { migrations } from './migrations'` + `prodMigrations: migrations`
+3. Query 函數加 try-catch → 空 DB 時 `next build` prerender 不會炸掉
+
+**教訓**：
+1. 不確定 framework 行為時，**先查文檔（Context7）再改代碼**，不要盲目猜測
+2. 自動生成的 migration 函數簽名有未使用的 `payload, req` 參數 → 改為 `{ db }` 避免 lint 錯誤
+3. Production port（5448）未在 Hetzner 防火牆允許範圍（5442-5446）→ 本地無法直連，需用 Coolify 內部網路
+
+> 來源：Lawyer App Ghost → Payload CMS 遷移 Production 部署（2026-02-09）
