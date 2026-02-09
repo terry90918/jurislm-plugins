@@ -4,7 +4,7 @@
 
 ## 功能
 
-- **53 個經驗模式**，按 11 個主題分類
+- **63 個經驗模式**，按 11 個主題分類
 - 每個模式包含：問題描述、根因分析、正確解法、來源專案
 - 涵蓋：診斷除錯、測試策略、基礎設施、安全防護、架構重構、Git 工作流、業務邏輯、雲端遷移、前端工具鏈、Docker 部署
 
@@ -26,9 +26,9 @@
 | 類別 | 模式數 | 涵蓋主題 |
 |------|--------|----------|
 | A. 診斷與除錯 | 8 | 環境 vs 代碼、過度工程化、系統性診斷、Typecheck 失敗 |
-| B. 測試 | 12 | Vitest、Playwright、E2E mock、assertion 陷阱、globalIgnores |
+| B. 測試 | 15 | Vitest、Playwright、E2E mock、assertion 陷阱、globalIgnores、$transaction mock |
 | C. 基礎設施與部署 | 7 | MCP、Coolify、Hetzner、Release Please、Migration 安全 |
-| D. 安全與錯誤處理 | 4 | Production 錯誤隱藏、Token 估算、SSE 解析、Regex lastIndex |
+| D. 安全與錯誤處理 | 6 | Production 錯誤隱藏、Token 估算、SSE 解析、Regex lastIndex、Reorder 驗證、.env.example 安全 |
 | D2. 業務邏輯 | 4 | JurisLM 核心業務、Legal Plugin 設計、分類系統、Prompt Injection |
 | E. 架構與重構 | 5 | Config-driven mapping、Token budget、Per-tool timeout、API 錯誤分類 |
 | F. Git 工作流 | 3 | Merge + review 分離、PR Review 驗證 |

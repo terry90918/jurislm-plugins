@@ -163,6 +163,16 @@ bunx playwright test                                     # E2E 驗證
 
 ## 已知陷阱
 
+### 資料庫操作
+
+- **count-then-create 必須用 `$transaction`**：先 count 檢查限制再 create 有 race condition，必須包在 `prisma.$transaction()` 內
+- **Reorder API 需驗證 ID 陣列**：排序 endpoint 接收 `orderedIds` 時，必須驗證無重複、全部存在、完整集合（不可遺漏）
+- **重構實作後同步更新測試 mock**：將 raw Prisma 呼叫改為 hook method 時，測試的 mock target 也要跟著改
+
+### 導航
+
+- **SideMenu 連結需帶完整 query params**：側邊選單的頁面連結（如 `/portfolio`）需保留當前的 query parameters（如 `?tab=holdings`），否則導航會丟失 tab 狀態
+
 ### React 狀態
 
 - `useSyncExternalStore` 的 `getSnapshot` 必須返回 **referentially stable** 的值

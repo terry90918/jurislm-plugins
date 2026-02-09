@@ -5,7 +5,7 @@ description: This skill should be used when encountering bugs, debugging issues,
 
 # 跨專案開發經驗模式庫
 
-從實際踩坑中提煉的 53 個關鍵教訓與改進方案，按主題分類。每個模式包含問題描述、根因分析、正確解法。
+從實際踩坑中提煉的 63 個關鍵教訓與改進方案，按主題分類。每個模式包含問題描述、根因分析、正確解法。
 
 ---
 
@@ -82,7 +82,7 @@ description: This skill should be used when encountering bugs, debugging issues,
 
 ---
 
-## B. 測試（12 個模式）
+## B. 測試（15 個模式）
 
 ### 模式 8：表層 vs 本質驗證
 
@@ -238,6 +238,68 @@ function readSettings(): Settings {
 
 > 來源：stock PR #12 merge + review 流程
 
+### 模式 60：Prisma $transaction 原子性 — count-then-create race condition
+
+**問題**：先 `prisma.model.count()` 檢查數量限制，再 `prisma.model.create()` 新增，兩步之間有 race condition。並發請求可能同時通過 count 檢查，超過限制。
+
+**案例**：觀察清單上限 50 筆，兩個請求同時讀到 49 筆 → 都通過 → 變成 51 筆。
+
+**正確做法**：用 `prisma.$transaction()` 包裝 count + create：
+
+```typescript
+const result = await prisma.$transaction(async (tx) => {
+  const count = await tx.holding.count({ where: { portfolioId } });
+  if (count >= WATCHLIST_LIMIT) {
+    throw new Error(`觀察清單已達上限 ${WATCHLIST_LIMIT} 筆`);
+  }
+  return tx.holding.create({ data: { ... } });
+});
+```
+
+**教訓**：
+1. 任何「先查再寫」的模式都有 race condition 風險
+2. `$transaction` 在 PostgreSQL 中使用 serializable isolation 確保原子性
+3. API route 的 count 檢查和 create 必須在同一個 transaction 內
+
+> 來源：stock PR review — watchlist/holding 新增的 race condition（2026-02-10）
+
+### 模式 61：重構實作後測試 mock 必須同步更新
+
+**問題**：將 raw `prisma.xxx.findMany()` 重構為 hook method 呼叫（如 `usePortfolio` 的方法），但測試仍在 mock 舊的 Prisma 方法 → 測試通過但沒測到真正的邏輯。
+
+**案例**：API route 從直接呼叫 `prisma.holding.findMany()` 改為呼叫 hook 的 `addToWatchlist()`，但測試仍 mock `prisma.holding.findMany` → 測試通過但實際上沒走過新的 hook 邏輯。
+
+**正確做法**：
+1. 重構實作 → 立即更新對應測試的 mock target
+2. 用 `vi.spyOn` 確認新方法確實被呼叫
+3. 重構完成前不 commit（實作 + 測試一起改）
+
+> 來源：stock PR review — API route 重構後測試 mock 不一致（2026-02-10）
+
+### 模式 62：$transaction mock 模式
+
+**問題**：測試需要 mock `prisma.$transaction()`，但 `$transaction` 接受 callback 並注入 `tx` 物件。
+
+**正確做法**：mock `$transaction` 時執行 callback 並注入 mock tx：
+
+```typescript
+const mockTx = {
+  holding: { count: vi.fn(), create: vi.fn(), findMany: vi.fn() },
+  watchlistGroup: { findUnique: vi.fn() },
+};
+
+vi.mocked(prisma.$transaction).mockImplementation(async (cb) => {
+  return cb(mockTx as unknown as PrismaClient);
+});
+```
+
+**教訓**：
+1. `$transaction` 的 callback 參數是一個與 `prisma` 同介面的 `tx` 物件
+2. mock 時必須執行 callback（不能只 `mockResolvedValue`）
+3. 在 `mockTx` 上設定各 model 的回傳值來控制 transaction 內行為
+
+> 來源：stock PR review — $transaction 測試模式（2026-02-10）
+
 ---
 
 ## C. 基礎設施與部署（7 個模式）
@@ -368,7 +430,7 @@ function readSettings(): Settings {
 
 ---
 
-## D. 安全與錯誤處理（4 個模式）
+## D. 安全與錯誤處理（6 個模式）
 
 ### Finally block 必須用 nested try-catch
 
@@ -454,6 +516,50 @@ for (const pattern of DANGEROUS_PATTERNS) {
 **正確做法**：`Array.from(str).slice(0, N).join("")` 按 code point 截斷。
 
 > 來源：JurisLM PR #134 附件截斷修復（2026-02-09）
+
+### 模式 63：Reorder API 必須驗證 ID 陣列完整性
+
+**問題**：排序 API 接受 `orderedIds: string[]`，直接用 index 更新 `sortOrder`，未驗證陣列內容。攻擊者可傳入重複 ID、不存在 ID、或遺漏部分 ID。
+
+**正確做法**：三重驗證：
+
+```typescript
+// 1. 無重複
+const unique = new Set(orderedIds);
+if (unique.size !== orderedIds.length) throw new Error('ID 不可重複');
+
+// 2. 全部存在
+const existing = await tx.model.findMany({ where: { id: { in: orderedIds } } });
+if (existing.length !== orderedIds.length) throw new Error('包含不存在的 ID');
+
+// 3. 完整集合（不可遺漏）
+const allItems = await tx.model.findMany({ where: { parentId } });
+if (allItems.length !== orderedIds.length) throw new Error('必須包含所有項目');
+```
+
+**教訓**：
+1. 排序操作看似無害，但不驗證 = 資料完整性風險
+2. 三重驗證可在 `$transaction` 內一起做
+3. 用 `Set` 檢查重複最高效
+
+> 來源：stock PR review — watchlist groups reorder API 驗證（2026-02-10）
+
+### 模式 64：.env.example 不可包含真實密碼
+
+**問題**：`.env.example` 是 committed 到 repo 的範本檔案，如果包含真實 `DATABASE_URL`（含密碼），密碼會被公開。
+
+**正確做法**：
+```env
+# .env.example（只放格式範例）
+DATABASE_URL="postgresql://user:password@localhost:5432/dbname"
+```
+
+**教訓**：
+1. `.env.example` 是給新開發者看格式的，不是放真實值的
+2. git history 中的密碼即使後來刪除也能被找到
+3. Code review 時特別注意 `.env*` 檔案的變更
+
+> 來源：stock PR review — .env.example 包含真實連線字串（2026-02-10）
 
 ---
 

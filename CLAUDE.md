@@ -83,10 +83,10 @@ plugins/
 | hetzner | 1.2.0 | MCP Server | hetzner-mcp-server（14 工具） |
 | coolify | 1.3.2 | MCP Server | jurislm-coolify-mcp（35 工具） |
 | lawyer | 1.2.0 | Skill Only | Payload CMS + 部署 + E2E 測試指南 |
-| stock | 1.0.0 | Skill Only | TWSE/Yahoo API + 投資組合 + E2E 測試 |
+| stock | 1.1.0 | Skill Only | TWSE/Yahoo API + 投資組合 + E2E 測試 |
 | jurislm-dev | 1.1.0 | Skill Only | Unified Agent + CLI + Dashboard + 資料同步 + 法律分類（3 skills） |
 | github-release | 1.0.0 | Skill Only | Release Please + Claude Code Review + Release Notes |
-| lessons-learned | 1.5.0 | Skill Only | 58 經驗模式：診斷除錯、測試、基礎設施、安全、架構、業務邏輯、雲端遷移、前端工具鏈、Docker 部署 |
+| lessons-learned | 1.6.0 | Skill Only | 63 經驗模式：診斷除錯、測試、基礎設施、安全、架構、業務邏輯、雲端遷移、前端工具鏈、Docker 部署 |
 
 ## 注意事項
 
@@ -158,7 +158,7 @@ plugins/<name>/
 
 ## 跨專案開發經驗模式
 
-> 更多詳細的開發經驗模式（58 個模式，11 個分類）已整合至 **lessons-learned plugin**。
+> 更多詳細的開發經驗模式（63 個模式，11 個分類）已整合至 **lessons-learned plugin**。
 
 包含主題：
 - 診斷與除錯、測試策略、基礎設施與部署
