@@ -120,7 +120,11 @@ User Query → runUnifiedAgent()
 
 ### Tool Registry (tool-registry.ts)
 
-11 tools organized into 4 categories:
+11 tools organized into 4 categories, with per-tool timeout differentiation:
+- **LLM tools** (analyze_clause, parse_contract, etc.): 45s timeout
+- **Search**: 60s timeout
+- **Simple tools** (sanitize_content, load_playbook): 30s default
+- **Extended Thinking mode**: All timeouts × 1.5
 
 | Category | Tools | Implementation File |
 |----------|-------|-------------------|
@@ -405,3 +409,8 @@ describe('executeTool', () => {
 - Contract `parseContract` returns `{metadata, clauses}`, not just clauses
 - `conversations` table has NO metadata column; use `messages.metadata` for cross-turn state
 - `SourceCitation` type exported from `unified/tools/search-knowledge` (not from rag/state)
+- Global regex `test()` advances lastIndex — must reset to 0 before reuse
+- `String.slice()` can split surrogate pairs — use `Array.from(str).slice()` for safe CJK truncation
+- SSE event/data may split across chunks — use state machine (pendingEventType), not line lookahead
+- Production errors: `NODE_ENV === "production"` not `!== "development"` (test env needs error details)
+- CJK token estimation: `estimateTokens()` in agent.ts (CJK ~1.5 chars/token, ASCII ~4 chars/token)

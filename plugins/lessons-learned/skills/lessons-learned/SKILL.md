@@ -5,7 +5,7 @@ description: This skill should be used when encountering bugs, debugging issues,
 
 # 跨專案開發經驗模式庫
 
-從實際踩坑中提煉的 42+ 個關鍵教訓與改進方案，按主題分類。每個模式包含問題描述、根因分析、正確解法。
+從實際踩坑中提煉的 49+ 個關鍵教訓與改進方案，按主題分類。每個模式包含問題描述、根因分析、正確解法。
 
 ---
 
@@ -393,9 +393,54 @@ finally {
 
 > 來源：JurisLM content sanitization
 
+### 模式 43：Production 錯誤訊息隱藏策略
+
+**問題**：`NODE_ENV !== "development"` 判斷會在 test 環境也隱藏錯誤，導致測試無法驗證錯誤訊息。
+
+**正確做法**：`NODE_ENV === "production"` — 只在 production 隱藏。
+
+**前端配套**：`toUserFriendlyError()` 函數映射內部錯誤為用戶友善訊息（中文）。
+
+> 來源：JurisLM PR #134 review（2026-02-09）
+
+### 模式 44：API 錯誤分類處理
+
+**問題**：所有 API 錯誤統一處理，用戶看到「Internal Server Error」。
+
+**正確做法**：區分 429（rate limit）和 500+（server error），提供不同用戶訊息和重試策略：
+```typescript
+if (apiError.status === 429) throw new Error("AI 服務目前繁忙，請稍後再試");
+if (apiError.status >= 500) throw new Error("AI 服務暫時無法使用，請稍後再試");
+```
+
+> 來源：JurisLM PR #134 Anthropic API error handling（2026-02-09）
+
+### 模式 45：Regex global lastIndex 狀態污染
+
+**問題**：帶 `g` flag 的 regex 呼叫 `test()` 後 `lastIndex` 推進，下次 `test()` 從中間開始→漏匹配或行為異常。
+
+**正確做法**：每次使用前重置 `pattern.lastIndex = 0`。
+
+```typescript
+for (const pattern of DANGEROUS_PATTERNS) {
+  pattern.lastIndex = 0;  // ← 必須重置
+  if (pattern.test(sanitized)) { ... }
+}
+```
+
+> 來源：JurisLM PR #134 sanitize.ts regex fix（2026-02-09）
+
+### 模式 46：Surrogate pair 安全截斷
+
+**問題**：`String.slice(0, N)` 按 UTF-16 code unit 截斷，可能切斷 emoji 或 CJK 擴展字元。
+
+**正確做法**：`Array.from(str).slice(0, N).join("")` 按 code point 截斷。
+
+> 來源：JurisLM PR #134 附件截斷修復（2026-02-09）
+
 ---
 
-## E. 架構與重構（2 個模式）
+## E. 架構與重構（5 個模式）
 
 ### Config-driven mapping 優於 switch
 
@@ -414,6 +459,54 @@ finally {
 - 追蹤累積 usage 並在每輪檢查
 
 > 來源：JurisLM agent conversation
+
+### 模式 47：CJK-aware Token 估算
+
+**問題**：`content.length / 4` 對中文法律文本嚴重低估 token 數（中文 1 字 ≈ 0.67 token，不是 0.25）。
+
+**正確做法**：分別計算 CJK 和 ASCII 字元：
+
+```typescript
+const CJK_REGEX = /[\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff]/g;
+export function estimateTokens(text: string): number {
+  const cjkCount = (text.match(CJK_REGEX) ?? []).length;
+  const asciiCount = text.length - cjkCount;
+  return Math.ceil(cjkCount / 1.5 + asciiCount / 4);
+}
+```
+
+> 來源：JurisLM PR #134 agent.ts token estimation（2026-02-09）
+
+### 模式 48：Per-tool timeout 差異化
+
+**問題**：所有 tool 共用 30s timeout，LLM 呼叫類 tool 經常超時。
+
+**正確做法**：`TOOL_TIMEOUTS` map 差異化設定：
+- LLM tools（analyze_clause 等）：45s
+- Search：60s
+- Simple tools（sanitize_content）：30s（預設）
+- Extended Thinking 模式：1.5x 乘數
+
+> 來源：JurisLM PR #134 tool-registry.ts（2026-02-09）
+
+### 模式 49：SSE 跨 chunk 解析
+
+**問題**：SSE event 和 data 行可能分在不同 TCP chunk。Line lookahead `lines[i+1]` 在 chunk 邊界找不到 data 行。
+
+**正確做法**：State machine 模式 — 用 `pendingEventType` 追蹤狀態：
+
+```typescript
+let pendingEventType: string | null = null;
+for (const line of lines) {
+  if (line.startsWith("event: ")) pendingEventType = line.slice(7).trim();
+  else if (line.startsWith("data: ") && pendingEventType) {
+    handleEvent({ type: pendingEventType, data: JSON.parse(line.slice(6)) });
+    pendingEventType = null;
+  } else if (line === "") pendingEventType = null;
+}
+```
+
+> 來源：JurisLM PR #134 use-chat-stream.ts SSE fix（2026-02-09）
 
 ---
 

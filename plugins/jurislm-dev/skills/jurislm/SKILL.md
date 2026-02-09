@@ -27,7 +27,7 @@ description: >-
   "Playbook", "NDA Triage", "Classification", "GREEN", "YELLOW", "RED",
   "escalation triggers", "risk assessment", "lib/agents/shared", "lib/agents/unified".
   Provides comprehensive guidance for Taiwan legal AI platform development.
-version: 4.0.0
+version: 4.1.0
 ---
 
 # JurisLM Platform Guide
@@ -353,6 +353,12 @@ bun run src/index.ts taxonomy stats --info   # Show statistics
 1 Agent + SKILL.md + 11 Tools 取代原 4 LangGraph Agents + keyword router：
 
 **Agentic Loop**: LLM → tool_use → executeTool → tool_result → LLM → ... → text response
+
+**Tool Timeout**: Per-tool 差異化超時（LLM tools 45s, search 60s, simple 30s），Extended Thinking 模式 1.5x 乘數
+
+**Token Estimation**: CJK-aware — 純 CJK ~1.5 chars/token, ASCII ~4 chars/token, `estimateTokens()` in agent.ts
+
+**Error Handling**: Production 環境隱藏內部錯誤；Anthropic API 429/500 分類處理；前端 `toUserFriendlyError()` 友善訊息
 
 **Agent Routing** — LLM auto-detects from first tool call:
 
