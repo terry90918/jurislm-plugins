@@ -1,0 +1,57 @@
+# GitHub Auto-generated Release Notes Configuration
+# https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes
+#
+# Labels follow Semantic Versioning (https://semver.org/):
+# - MAJOR: breaking changes (incompatible API changes)
+# - MINOR: new features (backwards compatible)
+# - PATCH: bug fixes (backwards compatible)
+
+changelog:
+  exclude:
+    labels:
+      - ignore-for-release
+      - dependencies
+    authors:
+      - dependabot
+      - renovate
+
+  categories:
+    - title: '⚠️ Breaking Changes'
+      labels:
+        - breaking
+
+    - title: '🚀 New Features'
+      labels:
+        - feat
+
+    - title: '🐛 Bug Fixes'
+      labels:
+        - fix
+
+    - title: '⚡ Performance'
+      labels:
+        - perf
+
+    - title: '📚 Documentation'
+      labels:
+        - docs
+
+    - title: '♻️ Refactoring'
+      labels:
+        - refactor
+
+    - title: '🧪 Tests'
+      labels:
+        - test
+
+    - title: '🔧 CI/CD'
+      labels:
+        - ci
+
+    - title: '🏠 Maintenance'
+      labels:
+        - chore
+
+    - title: '📦 Other Changes'
+      labels:
+        - '*'
