@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.0](https://github.com/terry90918/jurislm-plugins/compare/v1.2.0...v1.3.0) (2026-02-09)
+
+
+### Features
+
+* CLAUDE.md 繁體中文化 + 新增 staging 保護與 Cloudflare WAF 經驗模式 ([19a42ec](https://github.com/terry90918/jurislm-plugins/commit/19a42ecef18ef1927cd5ee6dcf417dd2bc3e5e0b))
+* 更新三個 plugins 反映 Dashboard 與 merge 經驗 ([5d832ac](https://github.com/terry90918/jurislm-plugins/commit/5d832ac06192be6c2c6b2dbf29be60784c3210f8))
+
 ## [1.2.0](https://github.com/terry90918/jurislm-plugins/compare/v1.1.0...v1.2.0) (2026-02-09)
 
 
