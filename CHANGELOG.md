@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.2.0](https://github.com/terry90918/jurislm-plugins/compare/v1.1.0...v1.2.0) (2026-02-09)
+
+
+### Features
+
+* **lessons-learned:** 新增 PR [#134](https://github.com/terry90918/jurislm-plugins/issues/134) review 7 個經驗模式（43-49） ([96ca571](https://github.com/terry90918/jurislm-plugins/commit/96ca57177d9923dde18786db2ffad6544856f035))
+* **lessons-learned:** 新增模式 43 Payload CMS Production Migration 教訓 ([425052c](https://github.com/terry90918/jurislm-plugins/commit/425052c141cfd846afb48f9e9bda6ee2945fb06a))
+* **lessons-learned:** 新增雲端遷移與環境配置 6 個模式（37-42） ([d96343f](https://github.com/terry90918/jurislm-plugins/commit/d96343f4adb3afcf48bb6600db0da84aeeadf4cb))
+
 ## [1.1.0](https://github.com/terry90918/jurislm-plugins/compare/v1.0.0...v1.1.0) (2026-02-09)
 
 
