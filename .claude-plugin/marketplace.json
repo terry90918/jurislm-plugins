@@ -27,7 +27,7 @@
       "name": "lawyer",
       "source": "./plugins/lawyer",
       "description": "劉尹惠律師事務所網站開發 Skill，涵蓋 Payload CMS、部署、測試工作流",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "author": {
         "name": "Terry Chen"
       }
@@ -63,7 +63,7 @@
       "name": "lessons-learned",
       "source": "./plugins/lessons-learned",
       "description": "跨專案開發經驗模式庫，涵蓋診斷除錯、測試策略、基礎設施、安全防護、架構重構、雲端遷移、前端工具鏈的關鍵教訓",
-      "version": "1.4.0",
+      "version": "1.5.0",
       "author": {
         "name": "Terry Chen"
       }

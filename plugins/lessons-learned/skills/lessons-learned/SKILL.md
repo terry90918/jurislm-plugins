@@ -5,7 +5,7 @@ description: This skill should be used when encountering bugs, debugging issues,
 
 # 跨專案開發經驗模式庫
 
-從實際踩坑中提煉的 56+ 個關鍵教訓與改進方案，按主題分類。每個模式包含問題描述、根因分析、正確解法。
+從實際踩坑中提煉的 58+ 個關鍵教訓與改進方案，按主題分類。每個模式包含問題描述、根因分析、正確解法。
 
 ---
 
@@ -348,6 +348,23 @@ function readSettings(): Settings {
 3. 診斷白屏時，檢查 server log 的 `getFromImportMap: PayloadComponent not found` 警告
 
 > 來源：lawyer-app Payload Admin 白屏事件（2026-02-09）
+
+### 模式 58：Cloudflare Free Plan WAF 限制
+
+**問題**：在 Cloudflare WAF 建立自訂規則，使用 `cf.bot_management.verified_bot` 欄位，「部署」按鈕無反應，無錯誤提示。
+
+**根因**：`cf.bot_management.verified_bot` 需要 Bot Management 付費方案（Enterprise add-on），Free plan 無法使用。Cloudflare dashboard 不顯示明確錯誤訊息，按鈕靜默失敗。
+
+**Free plan 可用欄位**：`http.host`、`ip.src`、`http.user_agent`、`http.request.uri.path` 等基本欄位。
+
+**替代方案**（不需 WAF）：
+1. `middleware.ts` — Next.js HTTP Basic Auth（401 直接擋爬蟲）
+2. `robots.ts` — `Disallow: /`（advisory 信號）
+3. `next.config.ts` — `X-Robots-Tag: noindex, nofollow, noarchive` header
+
+**教訓**：Cloudflare dashboard UI 不一定會對付費功能的表達式報錯 — 按鈕無反應時先懷疑欄位可用性。
+
+> 來源：lawyer-app staging 爬蟲封鎖（2026-02-09）
 
 ---
 

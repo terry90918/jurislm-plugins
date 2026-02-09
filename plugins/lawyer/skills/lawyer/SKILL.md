@@ -116,12 +116,23 @@ function slugify(text: string): string {
    - 後台：`https://<domain>/admin`
    - API：`https://<domain>/api/articles`
 
+### Staging 保護
+
+Staging 環境（`STAGING=true`）有三層保護：
+
+1. **HTTP Basic Auth**（`middleware.ts`）— 帳號 `admin` / 密碼 `staging2026`（可透過 `STAGING_USER`/`STAGING_PASSWORD` env var 覆蓋）
+2. **robots.ts** — 回傳 `Disallow: /`
+3. **X-Robots-Tag** header — `noindex, nofollow, noarchive`（`next.config.ts`）
+
+Middleware 排除路徑：`/api/*`（webhook）、`robots.txt`、`sitemap.xml`、靜態資源。
+
 ### 關鍵注意事項
 
 - `DATABASE_URI` 中的 `!` 必須 URL-encode 為 `%21`
 - 內部連線使用 DB UUID 作為 hostname（`dow48808w0wggws8wo8ck8g4:5432`）
 - `DATABASE_URI` 必須在 build-time 可用（Payload 在 `next build` 時執行 migration）
 - S3 配置為可選（payload.config.ts 使用 conditional spread）
+- Cloudflare WAF Free plan 不支援 `cf.bot_management.verified_bot` 欄位 — 需靠 middleware Basic Auth 擋爬蟲
 
 ## E2E 測試架構
 

@@ -1,8 +1,8 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+此文件為 Claude Code（claude.ai/code）在此 repository 工作時提供指引。
 
-## Commands
+## 常用命令
 
 ```bash
 # 驗證 JSON 格式
@@ -14,33 +14,33 @@ grep -A1 '"name": "<plugin>"' .claude-plugin/marketplace.json
 cat plugins/<name>/.claude-plugin/plugin.json | grep version
 ```
 
-## Repository Overview
+## Repository 概覽
 
-This is a Claude Code Plugin Marketplace (`jurislm-plugins`) containing plugins that integrate MCP (Model Context Protocol) servers with Claude Code.
+此為 Claude Code Plugin Marketplace（`jurislm-plugins`），包含整合 MCP（Model Context Protocol）伺服器與 Claude Code 的 plugins。
 
-## Structure
+## 結構
 
 ```
-.claude-plugin/marketplace.json  # Marketplace definition (name, owner, plugin list)
+.claude-plugin/marketplace.json  # Marketplace 定義（名稱、擁有者、plugin 列表）
 plugins/
   <plugin-name>/
-    .claude-plugin/plugin.json   # Plugin metadata (name, description, version, author)
-    .mcp.json                    # MCP server configuration (MCP Server type only)
-    README.md                    # Plugin documentation
-    skills/                      # Skill definitions (Skill Only type only)
+    .claude-plugin/plugin.json   # Plugin 元資料（名稱、描述、版本、作者）
+    .mcp.json                    # MCP Server 配置（僅 MCP Server 類型）
+    README.md                    # Plugin 文件
+    skills/                      # Skill 定義（僅 Skill Only 類型）
       <skill-name>/
-        SKILL.md                 # Skill definition with YAML frontmatter
-        references/              # Reference files (optional)
+        SKILL.md                 # 含 YAML frontmatter 的 Skill 定義
+        references/              # 參考文件（可選）
 ```
 
-**Plugin Types**:
-- **MCP Server**: `.mcp.json` + `plugin.json` + `README.md`（如 hetzner, coolify）
-- **Skill Only**: `plugin.json` + `README.md` + `skills/`（如 lawyer, stock, jurislm-dev）
+**Plugin 類型**：
+- **MCP Server**：`.mcp.json` + `plugin.json` + `README.md`（如 hetzner, coolify）
+- **Skill Only**：`plugin.json` + `README.md` + `skills/`（如 lawyer, stock, jurislm-dev）
 
-## Adding a New Plugin
+## 新增 Plugin
 
-1. Create directory: `plugins/<plugin-name>/`
-2. Add `.claude-plugin/plugin.json`:
+1. 建立目錄：`plugins/<plugin-name>/`
+2. 新增 `.claude-plugin/plugin.json`：
    ```json
    {
      "name": "<plugin-name>",
@@ -49,7 +49,7 @@ plugins/
      "author": { "name": "..." }
    }
    ```
-3. Add `.mcp.json` with MCP server config:
+3. 新增 `.mcp.json`（MCP Server 配置）：
    ```json
    {
      "<plugin-name>": {
@@ -59,36 +59,36 @@ plugins/
      }
    }
    ```
-4. Register in `.claude-plugin/marketplace.json` under `plugins` array
-5. **Keep version numbers in sync** between `marketplace.json` and `plugin.json`
+4. 在 `.claude-plugin/marketplace.json` 的 `plugins` 陣列中註冊
+5. **版本號必須同步**：`marketplace.json` 和 `plugin.json` 的版本保持一致
 
-## Version Management
+## 版本管理
 
-When releasing updates, increment version in **both** files:
+發布更新時，需在**兩個**檔案同時更新版本：
 - `.claude-plugin/marketplace.json` → `plugins[].version`
 - `plugins/<name>/.claude-plugin/plugin.json` → `version`
 
-## Environment Variables
+## 環境變數
 
-Plugins using MCP servers typically require API tokens. Use `${VAR_NAME}` syntax in `.mcp.json` to reference environment variables. Users must set these in `~/.zshenv` or `~/.zshrc` for Claude Code to access them.
+使用 MCP Server 的 plugin 通常需要 API token。在 `.mcp.json` 中用 `${VAR_NAME}` 語法引用環境變數。使用者需在 `~/.zshenv` 或 `~/.zshrc` 中設定，Claude Code 才能存取。
 
-Current plugin requirements:
-- **hetzner**: `HETZNER_API_TOKEN` (not `HCLOUD_TOKEN`)
-- **coolify**: `COOLIFY_ACCESS_TOKEN`, `COOLIFY_BASE_URL`
+目前 plugin 環境變數需求：
+- **hetzner**：`HETZNER_API_TOKEN`（不是 `HCLOUD_TOKEN`）
+- **coolify**：`COOLIFY_ACCESS_TOKEN`、`COOLIFY_BASE_URL`
 
-## Current Plugins
+## 目前 Plugins
 
-| Plugin | Version | Type | 說明 |
-|--------|---------|------|------|
+| Plugin | 版本 | 類型 | 說明 |
+|--------|------|------|------|
 | hetzner | 1.2.0 | MCP Server | hetzner-mcp-server（14 工具） |
 | coolify | 1.3.2 | MCP Server | jurislm-coolify-mcp（35 工具） |
-| lawyer | 1.0.0 | Skill Only | Payload CMS + 部署 + E2E 測試指南 |
+| lawyer | 1.1.0 | Skill Only | Payload CMS + 部署 + E2E 測試指南 |
 | stock | 1.0.0 | Skill Only | TWSE/Yahoo API + 投資組合 + E2E 測試 |
 | jurislm-dev | 1.1.0 | Skill Only | Unified Agent + CLI + Dashboard + 資料同步 + 法律分類（3 skills） |
 | github-release | 1.0.0 | Skill Only | Release Please + Claude Code Review + Release Notes |
-| lessons-learned | 1.4.0 | Skill Only | 56 經驗模式：診斷除錯、測試、基礎設施、安全、架構、業務邏輯、雲端遷移、前端工具鏈、Docker 部署 |
+| lessons-learned | 1.5.0 | Skill Only | 58 經驗模式：診斷除錯、測試、基礎設施、安全、架構、業務邏輯、雲端遷移、前端工具鏈、Docker 部署 |
 
-## Gotchas
+## 注意事項
 
 - **版本號必須同步**：`marketplace.json` 和 `plugin.json` 的版本必須一致
 - **環境變數名稱**：hetzner 用 `HETZNER_API_TOKEN`（不是 `HCLOUD_TOKEN`）
@@ -158,7 +158,7 @@ plugins/<name>/
 
 ## 跨專案開發經驗模式
 
-> 更多詳細的開發經驗模式（56 個模式，11 個分類）已整合至 **lessons-learned plugin**。
+> 更多詳細的開發經驗模式（58 個模式，11 個分類）已整合至 **lessons-learned plugin**。
 
 包含主題：
 - 診斷與除錯、測試策略、基礎設施與部署

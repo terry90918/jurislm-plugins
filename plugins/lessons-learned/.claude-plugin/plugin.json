@@ -1,7 +1,7 @@
 {
   "name": "lessons-learned",
   "description": "跨專案開發經驗模式庫，涵蓋診斷除錯、測試策略、基礎設施、安全防護、架構重構的關鍵教訓",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "author": {
     "name": "Terry Chen"
   }
