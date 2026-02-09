@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.1.0](https://github.com/terry90918/jurislm-plugins/compare/v1.0.0...v1.1.0) (2026-02-09)
+
+
+### Features
+
+* 新增 github-release plugin（標準化 GitHub Actions 工作流） ([1849f18](https://github.com/terry90918/jurislm-plugins/commit/1849f183f1e0fd70cd3928ddf6d8d90a40c1341d))
+* 新增 jurislm plugin（3 skills 從 project 遷移 + Unified Agent 更新） ([b7adff2](https://github.com/terry90918/jurislm-plugins/commit/b7adff252a0c8c7f9992a1cabf60ec14929c8fd4))
+* 新增 lessons-learned plugin（33+ 跨專案開發經驗模式庫） ([de477d7](https://github.com/terry90918/jurislm-plugins/commit/de477d76c6dc5a2c1278bc69a7d81479e11416fa))
+
 ## 1.0.0 (2026-02-09)
 
 
