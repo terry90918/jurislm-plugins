@@ -242,6 +242,62 @@ app.get('/health', (req, res) => {
 3. 保留多個區域的備份
 4. 設定 RTO/RPO 目標
 
+## 框架特定部署注意事項
+
+### Next.js + Payload CMS
+
+**架構**：Payload CMS 3.x 嵌入 Next.js App Router，共用同一個 build
+
+**必要環境變數**（build-time + runtime）：
+```bash
+DATABASE_URI=postgresql://user:pass@<db-uuid>:5432/dbname
+PAYLOAD_SECRET=<random-secret>
+NEXT_PUBLIC_SERVER_URL=https://your-domain.com
+```
+
+**常見陷阱**：
+
+1. **DATABASE_URI 必須在 build time 可用**：
+   - Payload CMS 在 `next build` 時需要連接 DB 執行 migration
+   - 在 Coolify 環境變數中設為 build-time variable
+
+2. **Admin CSS 不載入（Turbopack）**：
+   - Payload 3.x + Next.js 16 Turbopack 下 Admin UI CSS 不自動載入
+   - 需手動在 `custom.scss` 中 `@import '@payloadcms/ui/scss/app.scss'`
+   - 需在 `layout.tsx` 中 `import '@payloadcms/next/css'`
+
+3. **Route Groups 影響 metadata**：
+   - `robots.ts`、`sitemap.ts` 必須放在 `app/` 根目錄
+   - 不能放在 `app/(frontend)/` route group 內，否則會 404
+
+4. **S3 Storage 為可選**：
+   - 使用 conditional spread 讓 S3 配置可選
+   - 本地開發可不配 S3，上傳功能會 fallback 到本地
+
+### Next.js 通用部署
+
+**Nixpacks 設定**：
+- 自動偵測 Next.js 並使用正確的 build 命令
+- 需確保 `PORT` 環境變數正確（預設 3000）
+
+**Standalone 模式（推薦）**：
+```javascript
+// next.config.ts
+const config = { output: 'standalone' }
+```
+- 產生最小化的 production build
+- 減少 Docker image 大小
+
+### Staging 環境保護
+
+**HTTP Basic Auth**：
+- 防止搜尋引擎索引 staging
+- 在 Coolify 中可透過 middleware 或 reverse proxy 實現
+
+**SEO 保護**：
+- Staging 的 `robots.ts` 應回傳 `Disallow: /`
+- 加上 `X-Robots-Tag: noindex` header
+
 ## 安全最佳實踐
 
 ### 網路安全

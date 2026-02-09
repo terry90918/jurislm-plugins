@@ -80,3 +80,22 @@ Current plugin requirements:
 - **版本號必須同步**：`marketplace.json` 和 `plugin.json` 的版本必須一致
 - **環境變數名稱**：hetzner 用 `HETZNER_API_TOKEN`（不是 `HCLOUD_TOKEN`）
 - **description 語言**：使用繁體中文
+
+## 經驗教訓
+
+### MCP 獨立安裝 → Plugin 遷移
+
+從獨立 MCP Server（`.claude.json` 的 `mcpServers`）遷移到 Plugin 系統時，舊配置**不會自動移除**。
+
+**症狀**：`/plugin` → Installed 中出現 disabled 的舊 MCP Server
+
+**必須手動清除**：
+1. `.claude.json` 中該專案的 `mcpServers` 物件（刪除整個 server 定義）
+2. `.claude.json` 中該專案的 `disabledMcpServers` 陣列（移除對應條目）
+
+**驗證**：重啟 Claude Code → `/plugin` → Installed 確認只有 Plugin 版
+
+### 環境變數配置注意
+
+- 環境變數定義在 `~/.zshenv`（推薦）而非 `~/.zshrc`，確保非互動式 shell 也能讀取
+- Claude Code 的 MCP Server 是子進程，`~/.zshrc` 可能不會被 source

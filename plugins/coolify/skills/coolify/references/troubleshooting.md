@@ -329,6 +329,97 @@ truncate -s 0 /var/lib/docker/containers/*/*-json.log
 | `Container killed` | OOM | 增加記憶體 |
 | `Build context too large` | .dockerignore 缺失 | 新增 .dockerignore |
 
+## MCP Server 遷移問題
+
+### 從獨立 MCP 遷移到 Plugin 後出現重複項目
+
+**症狀**：`/plugin` → Installed 中出現一個 disabled 的「Coolify MCP Server」，與 Plugin 版同時存在
+
+**根本原因**：
+- 舊的獨立安裝設定在 `~/.claude.json` 的專案 `mcpServers` 中
+- 安裝 Plugin 版後，舊的被自動 disable 但**不會被刪除**
+- 導致 Installed 清單中出現兩個 Coolify 相關項目
+
+**解決方案**：
+
+手動編輯 `~/.claude.json`，找到對應專案區段：
+
+1. **移除 mcpServers 中的舊定義**：
+   ```json
+   // 刪除前
+   "mcpServers": {
+     "coolify": {
+       "type": "stdio",
+       "command": "node",
+       "args": ["/path/to/old/index.js"],
+       "env": { ... }
+     }
+   }
+   // 刪除後
+   "mcpServers": {}
+   ```
+
+2. **移除 disabledMcpServers 中的條目**：
+   ```json
+   // 刪除前
+   "disabledMcpServers": ["claude.ai Notion", "coolify"]
+   // 刪除後
+   "disabledMcpServers": ["claude.ai Notion"]
+   ```
+
+3. 重啟 Claude Code 生效
+
+**預防**：安裝 Plugin 後，立即檢查 `/plugin` → Installed 是否有重複項目
+
+## 資料庫連線字串問題
+
+### 特殊字元導致認證失敗
+
+**症狀**：PostgreSQL 連線失敗，顯示 `password authentication failed`
+
+**根本原因**：密碼含特殊字元（如 `!`、`@`、`#`、`$`）未 URL-encode
+
+**解決方案**：
+
+| 字元 | URL-encode |
+|------|-----------|
+| `!` | `%21` |
+| `@` | `%40` |
+| `#` | `%23` |
+| `$` | `%24` |
+| `%` | `%25` |
+| `&` | `%26` |
+| `+` | `%2B` |
+| `/` | `%2F` |
+
+```
+# 錯誤
+postgresql://user:MyPass!2026@host:5432/db
+
+# 正確
+postgresql://user:MyPass%212026@host:5432/db
+```
+
+**注意**：Coolify 環境變數中設定的 `DATABASE_URI` 也需要正確 encode
+
+### 內部連線使用 DB UUID 作為 hostname
+
+**適用場景**：同一 Coolify 伺服器上的 Application 連接 Database
+
+**正確做法**：
+```
+# 外部連線（開發/除錯用）
+postgresql://user:pass@<server-ip>:<public-port>/db
+
+# 內部連線（Application 環境變數）
+postgresql://user:pass@<database-uuid>:5432/db
+```
+
+**優點**：
+- 不需要公開 Database port
+- 走 Docker 內部網路，延遲更低
+- 更安全（不暴露到外網）
+
 ## 診斷工具使用
 
 ### 快速診斷流程

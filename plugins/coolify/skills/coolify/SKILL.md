@@ -136,6 +136,30 @@ export COOLIFY_BASE_URL="https://your-coolify-instance.com"
 3. 驗證網路政策（內部/外部存取）
 4. 檢查認證資訊
 
+## 部署前檢查清單
+
+每次部署新應用前，逐項確認：
+
+### 環境變數
+- [ ] `DATABASE_URI` 已設定且特殊字元已 URL-encode（`!` → `%21`）
+- [ ] 內部連線使用 DB UUID 作為 hostname（非 server IP + public port）
+- [ ] Build-time 變數已標記為 build variable（如 `DATABASE_URI` for Payload CMS）
+- [ ] 敏感資料不硬編碼在程式碼中
+
+### 域名與網路
+- [ ] FQDN 已設定（Application 直接設定，Service 需改 docker_compose_raw）
+- [ ] DNS 已解析（Cloudflare wildcard 或獨立 A/CNAME 記錄）
+- [ ] SSL 證書已簽發（通常自動，等待 1-5 分鐘）
+
+### 資源
+- [ ] 伺服器磁碟空間充足：`coolify_server_resources`
+- [ ] 記憶體足夠（Next.js build 建議 512MB+）
+
+### 驗證
+- [ ] 部署完成後檢查應用程式日誌：`coolify_get_application_logs`
+- [ ] 驗證域名可存取
+- [ ] 確認健康檢查通過
+
 ## 附加資源
 
 ### 參考文件
