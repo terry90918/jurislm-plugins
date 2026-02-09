@@ -70,10 +70,12 @@ JurisLM uses two separate PostgreSQL databases:
 | documents_052 | Interpretations (~6,700 source) | jid, fileset_id, jfull |
 | documents_053 | Decisions (~455 source) | jid, fileset_id, jfull |
 | documents_054 | Rulings (~21 source) | jid, fileset_id, jfull |
-| document_embeddings_051 | Judgment vectors | id, document_id, embedding |
-| document_embeddings_052 | Interpretation vectors | id, document_id, embedding |
-| document_embeddings_053 | Decision vectors | id, document_id, embedding |
-| document_embeddings_054 | Ruling vectors | id, document_id, embedding |
+| document_embeddings_051 | Judgment vectors | id, **jid**, embedding |
+| document_embeddings_052 | Interpretation vectors | id, **document_id**, embedding |
+| document_embeddings_053 | Decision vectors | id, **document_id**, embedding |
+| document_embeddings_054 | Ruling vectors | id, **document_id**, embedding |
+
+> **Schema Difference**: `document_embeddings_051` uses `jid` as the foreign key column, while 052/053/054 use `document_id`. This is a historical inconsistency that must be accounted for in queries spanning multiple categories.
 
 ### Law Data (4 tables)
 
@@ -201,11 +203,35 @@ FROM laws WHERE is_abolished = true;
 ### Document Counts
 
 ```sql
+-- Exact count (slow on large tables like documents_051 with 21M+ rows)
 SELECT 'documents_051' as tbl, COUNT(*) FROM documents_051
 UNION ALL SELECT 'documents_052', COUNT(*) FROM documents_052
 UNION ALL SELECT 'documents_053', COUNT(*) FROM documents_053
 UNION ALL SELECT 'documents_054', COUNT(*) FROM documents_054;
 ```
+
+### Fast Row Count Estimates (pg_class.reltuples)
+
+For large tables (21M+ rows), `COUNT(*)` is expensive. Use `pg_class.reltuples` for fast estimates:
+
+```sql
+SELECT
+  relname AS table_name,
+  reltuples::bigint AS estimated_rows
+FROM pg_class
+WHERE relname IN (
+  'documents_051', 'documents_052', 'documents_053', 'documents_054',
+  'document_embeddings_051', 'document_embeddings_052',
+  'document_embeddings_053', 'document_embeddings_054'
+)
+ORDER BY relname;
+```
+
+**Caveats**:
+- Returns `-1` for tables that have never been `ANALYZE`d
+- Run `ANALYZE table_name` to populate statistics
+- Estimates are updated by autovacuum, but may lag behind bulk inserts
+- Sufficient for dashboard displays, monitoring, and progress tracking
 
 ### Query Expansion with Synonyms
 

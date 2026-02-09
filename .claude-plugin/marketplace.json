@@ -44,8 +44,8 @@
     {
       "name": "jurislm-dev",
       "source": "./plugins/jurislm-dev",
-      "description": "JurisLM 台灣法律 AI 平台開發 Skill，涵蓋 Unified Agent、CLI、資料同步、法律分類",
-      "version": "1.0.0",
+      "description": "JurisLM 台灣法律 AI 平台開發 Skill，涵蓋 Unified Agent、CLI、Dashboard、資料同步、法律分類",
+      "version": "1.1.0",
       "author": {
         "name": "Terry Chen"
       }
@@ -62,8 +62,8 @@
     {
       "name": "lessons-learned",
       "source": "./plugins/lessons-learned",
-      "description": "跨專案開發經驗模式庫，涵蓋診斷除錯、測試策略、基礎設施、安全防護、架構重構、雲端遷移的關鍵教訓",
-      "version": "1.2.0",
+      "description": "跨專案開發經驗模式庫，涵蓋診斷除錯、測試策略、基礎設施、安全防護、架構重構、雲端遷移、前端工具鏈的關鍵教訓",
+      "version": "1.4.0",
       "author": {
         "name": "Terry Chen"
       }

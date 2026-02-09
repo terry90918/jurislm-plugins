@@ -297,6 +297,64 @@ NEXT_PUBLIC_SERVER_URL=https://your-domain.com
    - 使用 conditional spread 讓 S3 配置可選
    - 本地開發可不配 S3，上傳功能會 fallback 到本地
 
+### Turborepo + Dockerfile（Monorepo）
+
+適用於使用 Turborepo 管理的 Bun workspace monorepo。
+
+**Multi-stage Dockerfile 結構**：
+```dockerfile
+# Stage 1: Pruner - 最小化 workspace
+FROM oven/bun:1-alpine AS pruner
+RUN bun add -g turbo
+COPY . .
+RUN turbo prune <package-name> --docker
+
+# Stage 2: Builder - 安裝依賴並建置
+FROM oven/bun:1-alpine AS builder
+COPY --from=pruner /app/out/json/ .
+COPY --from=pruner /app/out/bun.lock ./bun.lock
+COPY --from=pruner /app/tsconfig.json .  # turbo prune 不包含根 tsconfig!
+RUN NODE_ENV=development bun install     # Coolify 注入 NODE_ENV=production，需覆蓋
+COPY --from=pruner /app/out/full/ .
+RUN bun run --cwd <workspace-dir> build
+
+# Stage 3: Runner - 最小化運行環境
+FROM oven/bun:1-alpine AS runner
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/bun.lock ./
+COPY --from=builder /app/<workspace>/package.json ./<workspace>/
+RUN bun install --production              # 重新安裝，不 COPY node_modules
+COPY --from=builder /app/<workspace>/dist ./<workspace>/dist
+WORKDIR /app/<workspace>
+CMD ["bun", "run", "start"]
+```
+
+**Coolify 注意事項**：
+1. Coolify 注入 `ARG NODE_ENV=production` → builder 用 `NODE_ENV=development bun install` 覆蓋
+2. Coolify 注入環境變數 ARG（如 `SHARED_DATABASE_URL`）→ runtime 自動可用
+3. Coolify 用 container hostname（如 `bsoc4s0w0g0ccwc4804wos80`）作為 `--add-host`
+4. `oven/bun:1-alpine` 沒有 `curl` → Coolify healthcheck 可能失敗
+
+**常見問題**：
+- `turbo prune` workspace 名稱是 `package.json` 的 `name`，不是目錄名
+- 不要 COPY builder 的 node_modules（workspace symlinks 會壞掉）
+- `serveStatic` 相對路徑取決於 WORKDIR，不是程式碼位置
+
+### Hono 應用部署
+
+Hono 是輕量級 Web 框架，適合 API 和小型前端應用。
+
+**Bun.serve 配置**：
+```typescript
+Bun.serve({
+  port: 3001,
+  idleTimeout: 120,  // 預設 10s，遠端 DB 查詢需要更長
+  fetch: app.fetch,
+});
+```
+
+**注意**：`HOSTNAME=0.0.0.0` 必須設定，否則 Bun server 綁定 `localhost`，Traefik 連不進來（502）。
+
 ### Next.js 通用部署
 
 **Nixpacks 設定**：

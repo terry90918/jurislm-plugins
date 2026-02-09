@@ -19,6 +19,7 @@ JurisLM 台灣法律 AI 平台（jurislm.com）的 Claude Code 開發 Skill。
 ## 適用場景
 
 - 開發 Unified Agent（SKILL.md + 11 Tools agentic loop）
+- 開發 Admin Dashboard（Hono + React 19 + Vite 7 + Tailwind CSS v4）
 - 操作 CLI 工具（db、sync、taxonomy、evaluate）
 - 同步 jurislm_shared_db（Judicial 051-054 + Law + Taxonomy）
 - 生成法律同義詞資料庫

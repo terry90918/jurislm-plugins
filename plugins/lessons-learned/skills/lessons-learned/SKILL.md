@@ -5,7 +5,7 @@ description: This skill should be used when encountering bugs, debugging issues,
 
 # 跨專案開發經驗模式庫
 
-從實際踩坑中提煉的 49+ 個關鍵教訓與改進方案，按主題分類。每個模式包含問題描述、根因分析、正確解法。
+從實際踩坑中提煉的 56+ 個關鍵教訓與改進方案，按主題分類。每個模式包含問題描述、根因分析、正確解法。
 
 ---
 
@@ -510,7 +510,7 @@ for (const line of lines) {
 
 ---
 
-## F. Git 工作流（2 個模式）
+## F. Git 工作流（3 個模式）
 
 ### Merge + Review fixes 分開 commit
 
@@ -525,6 +525,37 @@ for (const line of lines) {
 5. commit + push
 
 > 來源：stock PR #12
+
+### 模式 57：Merge + pre-commit hook 處理
+
+**核心禁止**：絕對不可使用 `--no-verify` 跳過 pre-commit hook（違反 CLAUDE.md 核心禁止行為）。
+
+**問題**：merge develop 後 typecheck 失敗常因新增 devDependencies 未安裝。
+
+**正確流程**：
+1. `git merge develop`（或其他分支）
+2. typecheck 失敗 → `bun install`（安裝新依賴）
+3. 再次 `git commit`（讓 pre-commit hook 驗證）
+
+**若誤用 `--no-verify`**：
+```bash
+git reset --hard HEAD~1     # 撤銷錯誤 commit
+bun install                 # 安裝依賴
+git merge develop           # 重新 merge
+git commit                  # 正確執行（不跳 hook）
+```
+
+**覆蓋遠端錯誤 commit**：
+```bash
+git push --force-with-lease  # 安全的 force push
+```
+
+**教訓**：
+1. pre-commit hook 是品質閘門，不可繞過
+2. typecheck 失敗 → 先解決問題（`bun install`），不是跳過驗證
+3. `--force-with-lease` 比 `--force` 更安全（保護遠端變更）
+
+> 來源：jurislm plan-b merge develop 經驗（2026-02-09）
 
 ---
 
@@ -727,3 +758,162 @@ process.exit(0);
 3. Production port（5448）未在 Hetzner 防火牆允許範圍（5442-5446）→ 本地無法直連，需用 Coolify 內部網路
 
 > 來源：Lawyer App Ghost → Payload CMS 遷移 Production 部署（2026-02-09）
+
+---
+
+## I. 前端工具鏈與框架（3 個模式）
+
+### 模式 50：Tailwind CSS v4 必須使用 @tailwindcss/vite 插件
+
+**問題**：安裝 Tailwind CSS v4 後，CSS 檔案載入正常但 utility classes 不生效（所有元素無樣式）。
+
+**根因**：Tailwind CSS v4 重構了建置流程，不再使用 PostCSS 插件。Vite 專案必須使用 `@tailwindcss/vite` 插件來掃描模板檔案並生成 utility classes。
+
+**正確做法**：
+```typescript
+// vite.config.ts
+import tailwindcss from "@tailwindcss/vite";
+
+export default defineConfig({
+  plugins: [tailwindcss()],
+});
+```
+
+**CSS 引入**：
+```css
+/* globals.css */
+@import "tailwindcss";
+```
+
+**教訓**：
+1. v4 大幅改變了配置方式 — 先查文檔（Context7）再配置
+2. 不再需要 `tailwind.config.ts` / `postcss.config.ts`
+3. CSS-first 配置：用 `@theme` directive 自訂 design tokens
+
+> 來源：JurisLM Dashboard Vite 7 + Tailwind CSS v4 整合（2026-02-09）
+
+### 模式 51：pg_class.reltuples — 大表快速行數估算
+
+**問題**：`COUNT(*)` 在 21M+ 行的表上耗時數十秒，不適合 Dashboard 即時顯示。
+
+**解法**：使用 PostgreSQL 統計表 `pg_class.reltuples` 取得估算值：
+
+```sql
+SELECT relname, reltuples::bigint AS estimated_rows
+FROM pg_class
+WHERE relname = 'documents_051';
+```
+
+**注意事項**：
+- 返回 `-1` 表示從未執行 `ANALYZE`（新表或匯入後未分析）
+- 估算值由 autovacuum 更新，大批量 INSERT 後可能延遲
+- 適用場景：Dashboard 顯示、監控、進度追蹤（不需要精確值）
+- 不適用：需要精確值的業務邏輯
+
+> 來源：JurisLM Dashboard 共用 DB 統計頁面（2026-02-09）
+
+### 模式 52：Bun.serve idleTimeout 影響長時間查詢
+
+**問題**：Dashboard API 查詢遠端 DB（跨機房）timeout，但相同查詢在本地 psql 正常。
+
+**根因**：`Bun.serve()` 預設 `idleTimeout` 為 10 秒，遠端 DB 查詢（尤其是大表 COUNT 或 JOIN）可能超過此限制。
+
+**正確做法**：
+```typescript
+Bun.serve({
+  port: 3001,
+  idleTimeout: 120, // 秒，預設 10
+  fetch: app.fetch,
+});
+```
+
+**教訓**：
+1. `idleTimeout` 是連線閒置超時，不是請求超時
+2. 遠端 DB 查詢應設定足夠的 idle timeout（建議 60-120s）
+3. 也要考慮 postgres.js 的 `connect_timeout` 和 `idle_timeout`
+
+> 來源：JurisLM Dashboard 遠端 DB 查詢超時（2026-02-09）
+
+---
+
+## J. Turborepo Docker 部署（4 個模式）
+
+### 模式 53：turbo prune --docker 踩坑記錄
+
+**問題**：`turbo prune <workspace> --docker` 建立最小化 Docker context 時遇到多個問題。
+
+| 問題 | 原因 | 修正 |
+|------|------|------|
+| `turbo prune jurislm_dashboard` not found | package.json `name` 用 hyphen（`jurislm-dashboard`）| 用 package.json 中的 `name` 值 |
+| `bun install --frozen-lockfile` 失敗 | turbo prune 不修改根 package.json workspaces | 加過濾腳本 + 移除 `--frozen-lockfile` |
+| `extends "../tsconfig.json"` 找不到 | turbo prune 不包含根 tsconfig.json | `COPY --from=pruner /app/tsconfig.json .` |
+| Next.js build 缺環境變數 | SSG page collection 需要 env vars | 建立 dummy `.env.shared` |
+
+**教訓**：
+1. `turbo prune` 的 workspace 名稱是 `package.json` 中的 `name`，不是目錄名
+2. turbo prune 的 `json/` 目錄缺少根 tsconfig → 手動 COPY
+3. 建議先 `turbo prune --dry` 確認會包含哪些檔案
+
+> 來源：JurisLM Dashboard Dockerfile 建置（2026-02-09）
+
+### 模式 54：Coolify 注入 ARG 影響 Docker build
+
+**問題**：本地 Docker build 成功，但 Coolify 部署失敗或行為異常。
+
+**根因**：Coolify 自動注入 `ARG NODE_ENV=production` 到每個 build stage，影響 `bun install` 行為（production 模式不安裝 devDependencies）。
+
+**正確做法**：
+```dockerfile
+# Builder stage - 明確覆蓋 NODE_ENV
+RUN NODE_ENV=development bun install
+
+# 或在 stage 開頭重設
+ENV NODE_ENV=development
+RUN bun install
+```
+
+**Coolify 也注入環境變數 ARG**：`SHARED_DATABASE_URL` 等 → runtime env vars 自動可用，不需 `--env-file`。
+
+> 來源：JurisLM Dashboard + App Coolify 部署（2026-02-09）
+
+### 模式 55：Runner 階段不要 COPY node_modules
+
+**問題**：從 builder 階段 COPY node_modules 到 runner，workspace symlinks 壞掉 → `Cannot find package` runtime error。
+
+**根因**：Bun workspace 在 node_modules 中建立 symlinks 指向 workspace packages，COPY 會破壞這些 symlinks。
+
+**正確做法**：Runner 階段重新安裝 production dependencies：
+```dockerfile
+# Runner stage
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/bun.lock ./
+COPY --from=builder /app/<workspace>/package.json ./<workspace>/
+RUN bun install --production
+```
+
+**教訓**：
+1. Workspace monorepo 的 node_modules 有特殊結構（symlinks）
+2. Docker COPY 不保留 symlinks → 必須重建
+3. `--production` 只安裝 runtime dependencies，減少 image 大小
+
+> 來源：JurisLM Dashboard runner 階段 `Cannot find package 'hono'`（2026-02-09）
+
+### 模式 56：Hono serveStatic 相對路徑與 WORKDIR
+
+**問題**：Hono `serveStatic({ root: "./dist" })` 返回 404，但檔案確實存在。
+
+**根因**：`serveStatic` 的 `root` 是相對於 `process.cwd()`（即 Docker WORKDIR），不是相對於程式碼檔案位置。
+
+**正確做法**：確保 WORKDIR 設定正確：
+```dockerfile
+# 如果 dist 在 /app/jurislm_dashboard/dist
+WORKDIR /app/jurislm_dashboard
+# 則 serveStatic({ root: "./dist" }) 解析為 /app/jurislm_dashboard/dist
+```
+
+**或使用絕對路徑**：
+```typescript
+serveStatic({ root: "/app/jurislm_dashboard/dist" })
+```
+
+> 來源：JurisLM Dashboard 靜態檔案 404（2026-02-09）

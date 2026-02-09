@@ -6,6 +6,8 @@ description: >-
   "db status", "db migrate", "db reset", "sync judicial", "sync law", "7-stage pipeline",
   "Unified Agent", "SKILL.md", "tool-registry", "agentic loop", "runUnifiedAgent",
   "shared database", "jurislm_shared_db",
+  "jurislm_dashboard", "dashboard", "Hono", "Vite 7", "postgres.js", "admin dashboard",
+  "pg_class.reltuples", "idleTimeout", "dashboard.jurislm.com",
   "Turborepo", "bun workspace", "packages/@jurislm", "Langfuse",
   "TEI embedding", "Ollama", "worktree docker", "pcode", "categories 051-054",
   "constitution rules", "Drizzle ORM", "SSE streaming", "legal RAG",
@@ -27,18 +29,19 @@ description: >-
   "Playbook", "NDA Triage", "Classification", "GREEN", "YELLOW", "RED",
   "escalation triggers", "risk assessment", "lib/agents/shared", "lib/agents/unified".
   Provides comprehensive guidance for Taiwan legal AI platform development.
-version: 4.1.0
+version: 4.2.0
 ---
 
 # JurisLM Platform Guide
 
-Taiwan legal AI platform using Bun + Turborepo Monorepo architecture with 3 sub-projects and 9 shared packages.
+Taiwan legal AI platform using Bun + Turborepo Monorepo architecture with 4 sub-projects and 9 shared packages.
 
 ## Platform Overview
 
 | Component | Technology | Port | Purpose |
 |-----------|------------|------|---------|
 | jurislm_app | Next.js 16 + shadcn/ui + Anthropic SDK | 3000 | Web application (Legal RAG, Knowledge Base, Contract/Document) |
+| jurislm_dashboard | Hono + React 19 + Vite 7 + postgres.js | 3001 | Admin dashboard (DB stats, sync monitoring, system health) |
 | jurislm_cli | TypeScript + Bun + Commander.js | - | CLI commands (db, sync, taxonomy, evaluate) |
 | jurislm_db | PostgreSQL 18 + pgvector | 5433* | Database Schema |
 
@@ -129,6 +132,35 @@ Next.js 16 + React 19 + Drizzle ORM + Anthropic SDK (Unified Agent) + Langfuse:
 | `components/chat/` | Chat interface components |
 
 See **`references/jurislm-app.md`** for detailed architecture.
+
+### jurislm_dashboard (Admin Dashboard)
+
+Hono + React 19 + Vite 7 + Tailwind CSS v4 + postgres.js:
+
+| Attribute | Value |
+|-----------|-------|
+| Framework | Hono (server) + React 19 (client) |
+| Build Tool | Vite 7 |
+| Styling | Tailwind CSS v4 (requires `@tailwindcss/vite` plugin) |
+| Database Client | postgres.js (direct SQL) |
+| Port | 3001 |
+| Design System | Shared with jurislm_app (Noto Sans TC, amber accents, warm beige) |
+
+**Deployment**:
+
+| Environment | URL | Coolify UUID | Branch |
+|-------------|-----|-------------|--------|
+| Production | https://dashboard.jurislm.com | x0ck84okoggcoswcsoc8cggk | main |
+| Staging | https://dashboard-staging.jurislm.com | h48okgk0o44wgs4wo8cwgkkg | develop |
+
+**Key Features**:
+- Shared DB statistics (document counts, embedding coverage via `pg_class.reltuples`)
+- Sync monitoring and system health
+- Direct postgres.js queries to jurislm_shared_db
+
+**Configuration Notes**:
+- `Bun.serve` `idleTimeout` defaults to 10s; set to 120s for remote DB queries
+- Uses CSS variables from `globals.css` consistent with jurislm_app's design system
 
 ### jurislm_cli (CLI Tool)
 
