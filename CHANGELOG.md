@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.4.0](https://github.com/terry90918/jurislm-plugins/compare/v1.3.0...v1.4.0) (2026-02-09)
+
+
+### Features
+
+* **lawyer:** v1.2.0 全面更新 SKILL.md 與 deployment 文件反映 codebase 現狀 ([c63d972](https://github.com/terry90918/jurislm-plugins/commit/c63d972fbeacb0c1d2aa35716e6746c97bb60220))
+* 新增 5 個經驗模式並更新 stock/lessons-learned plugins ([37ae04a](https://github.com/terry90918/jurislm-plugins/commit/37ae04abd36549c45f4a25e7cc722620000c0a1f))
+
+
+### Bug Fixes
+
+* 修正 lessons-learned 模式計數與描述一致性 ([0428933](https://github.com/terry90918/jurislm-plugins/commit/04289335de12133e3faa3d5af3cde38cbae14299))
+
 ## [1.3.0](https://github.com/terry90918/jurislm-plugins/compare/v1.2.0...v1.3.0) (2026-02-09)
 
 
