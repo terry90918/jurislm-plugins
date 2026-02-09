@@ -76,6 +76,7 @@ Current plugin requirements:
 | coolify | 1.3.2 | MCP Server | jurislm-coolify-mcp（35 工具） |
 | lawyer | 1.0.0 | Skill Only | Payload CMS + 部署 + E2E 測試指南 |
 | stock | 1.0.0 | Skill Only | TWSE/Yahoo API + 投資組合 + E2E 測試 |
+| github-release | 1.0.0 | Skill Only | Release Please + Claude Code Review + Release Notes |
 
 ## Gotchas
 

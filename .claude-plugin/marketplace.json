@@ -40,6 +40,15 @@
       "author": {
         "name": "Terry Chen"
       }
+    },
+    {
+      "name": "github-release",
+      "source": "./plugins/github-release",
+      "description": "GitHub Actions 標準化工作流 Skill，涵蓋 Release Please、Claude Code Review、Release Notes 配置",
+      "version": "1.0.0",
+      "author": {
+        "name": "Terry Chen"
+      }
     }
   ]
 }
