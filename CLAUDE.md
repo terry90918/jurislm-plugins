@@ -86,7 +86,7 @@ Current plugin requirements:
 | stock | 1.0.0 | Skill Only | TWSE/Yahoo API + 投資組合 + E2E 測試 |
 | jurislm-dev | 1.1.0 | Skill Only | Unified Agent + CLI + Dashboard + 資料同步 + 法律分類（3 skills） |
 | github-release | 1.0.0 | Skill Only | Release Please + Claude Code Review + Release Notes |
-| lessons-learned | 1.4.0 | Skill Only | 57 經驗模式：診斷除錯、測試、基礎設施、安全、架構、前端工具鏈、Git 工作流 |
+| lessons-learned | 1.4.0 | Skill Only | 56 經驗模式：診斷除錯、測試、基礎設施、安全、架構、業務邏輯、雲端遷移、前端工具鏈、Docker 部署 |
 
 ## Gotchas
 
@@ -156,98 +156,19 @@ plugins/<name>/
 
 ---
 
-## 跨專案開發經驗模式（2026-02-09 更新）
+## 跨專案開發經驗模式
 
-> 從各專案開發中提煉的通用教訓，避免重複犯錯。
+> 更多詳細的開發經驗模式（56 個模式，11 個分類）已整合至 **lessons-learned plugin**。
 
-### ESLint 配置
+包含主題：
+- 診斷與除錯、測試策略、基礎設施與部署
+- 安全與錯誤處理、業務邏輯、架構與重構
+- Git 工作流、工具與工作流、雲端遷移與環境配置
+- 前端工具鏈與框架、Turborepo Docker 部署
 
-**globalIgnores 是逃避不是解法**
-- 完全 ignore 一個目錄 = 失去所有 lint 保護（formatting、type safety、best practices 全消失）
-- 正確做法：為目標檔案設定專屬 ESLint override，只關閉不適用的規則
-- 例：E2E 測試 → `eslint-plugin-playwright` + 關閉 `react-hooks`，保留 TS/formatting 檢查
-- 來源：stock 專案 PR #12 — Copilot 指出 `tests/e2e/**` 不該全域忽略
+**使用方式**：
+```bash
+/plugin install lessons-learned@jurislm-plugins
+```
 
-**Vitest exclude 不可覆蓋預設**
-- `exclude: ['tests/e2e/**', 'node_modules/**']` 會覆蓋 vitest 預設排除的目錄
-- 正確：`import { configDefaults } from 'vitest/config'` → `exclude: [...configDefaults.exclude, 'tests/e2e/**']`
-
-### React 狀態管理
-
-**useSyncExternalStore snapshot 必須返回穩定引用**
-- `getSnapshot` 每次返回新物件 → `Object.is` 永遠 false → 無限 re-render → `Maximum update depth exceeded`
-- 解法：cache raw string + parsed result，只在 raw string 改變時才創建新物件
-- 來源：stock 專案 settings page — `readSettings()` 每次 `JSON.parse` 產生新物件
-
-### E2E 測試
-
-**Mock 資料格式必須與 API 回傳型別一致**
-- 寫 mock 前先讀 API route handler 的回傳型別（陣列 vs 物件）
-- `{ taiex: {...}, otc: {...} }` vs `[{...}]` 會導致 `undefined.name` runtime crash
-- 最佳實踐：從 TypeScript 型別定義反推 mock 結構
-
-**Playwright assertion 陷阱**
-- `expect(x).toBeVisible().catch(() => {})` — catch 吞掉斷言失敗，測試永遠不會 fail
-- `not.toBeVisible()` → 用 `toBeHidden()` 更語義化（`playwright/no-useless-not`）
-- 每個 test 至少一個 assertion（`playwright/expect-expect`）
-- `toHaveClass()` 等 async matcher 必須 `await`（`playwright/missing-playwright-await`）
-
-**Playwright route pattern**
-- `page.route('/api/**')` 只攔截相對路徑 → 用 `page.route('**/api/**')` 攔截完整 URL
-- 未 mock 路由應回傳 404（hermetic tests），不要 `route.fallback()`
-
-### PR Review 流程
-
-**修正後必須逐項讀檔驗證**
-- 修完 N 項後必須逐一 `Read` 對應檔案行號確認實際變更
-- 聲稱「全部修完」但漏了 1 項 = 信任崩壞
-- 用表格追蹤：`| # | 檔案:行號 | 建議 | 狀態 | 驗證 |`
-
-### 安全與錯誤處理
-
-**Finally block 必須用 nested try-catch**
-- `finally { await cleanup1(); await cleanup2(); controller.close(); }` → cleanup1 拋錯會跳過後續
-- 正確：每個 async 操作獨立 try-catch，確保 `controller.close()` 一定執行
-- 來源：PR #134 — SSE stream memory leak
-
-**Tool 執行需要 timeout 保護**
-- Promise.race + setTimeout 包裝所有外部工具呼叫
-- 避免單一工具掛住整個 agentic loop
-- 預設 30 秒，可配置
-
-**Per-resource rate limiting**
-- 全域 rate limit 不夠 → 需要 per-conversation / per-resource 限制
-- 防止單一資源被 rapid-fire 攻擊
-
-**sanitize 策略：替換優於刪除**
-- 危險 pattern 替換為 `[REDACTED]`（而非靜默移除）
-- 保留 context 便於安全審計
-- 正規化空白時保留換行符（`[^\S\n]+` 而非 `\s+`）
-
-### 架構重構
-
-**Config-driven mapping 優於 switch**
-- `Record<string, Type>` map + fallback 比 switch 更易擴展
-- 例：`TOOL_TO_AGENT_TYPE` map 取代 detectAgentType switch
-
-**Token budget 控制**
-- Agentic loop 必須有 token 總預算上限
-- 超過時 graceful 中斷，不要無聲耗盡 context
-- 追蹤累積 usage 並在每輪檢查
-
-### 測試（Agent/Tool 相關）
-
-**mock 結構必須反映真實依賴**
-- 新增 rate limiter → 所有依賴該模組的測試都需要更新 mock
-- 新增 export → 驗證測試可以 import
-- `db.select().from().where()` chain 不易 mock → 考慮用 `findMany` + TODO
-
-**E2E timeout 配置**
-- `expect.timeout` 和 `use.actionTimeout` 要明確設定
-- CI 環境加 retry（`retries: process.env.CI ? 2 : 0`）
-
-### Git 工作流
-
-**Merge + Review fixes 分開 commit**
-- merge commit 不應包含非 merge 的修改
-- 策略：`git stash` review fixes → 完成 merge commit → `git stash pop` → 建立 review fixes commit
+安裝後可在任何專案中使用這些經驗模式，涵蓋從除錯、測試、部署到架構重構的完整開發生命週期。
