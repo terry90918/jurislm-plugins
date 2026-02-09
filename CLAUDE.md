@@ -76,6 +76,7 @@ Current plugin requirements:
 | coolify | 1.3.2 | MCP Server | jurislm-coolify-mcp（35 工具） |
 | lawyer | 1.0.0 | Skill Only | Payload CMS + 部署 + E2E 測試指南 |
 | stock | 1.0.0 | Skill Only | TWSE/Yahoo API + 投資組合 + E2E 測試 |
+| jurislm | 1.0.0 | Skill Only | Unified Agent + CLI + 資料同步 + 法律分類（3 skills） |
 | github-release | 1.0.0 | Skill Only | Release Please + Claude Code Review + Release Notes |
 
 ## Gotchas
@@ -151,6 +152,49 @@ Current plugin requirements:
 - 修完 N 項後必須逐一 `Read` 對應檔案行號確認實際變更
 - 聲稱「全部修完」但漏了 1 項 = 信任崩壞
 - 用表格追蹤：`| # | 檔案:行號 | 建議 | 狀態 | 驗證 |`
+
+### 安全與錯誤處理
+
+**Finally block 必須用 nested try-catch**
+- `finally { await cleanup1(); await cleanup2(); controller.close(); }` → cleanup1 拋錯會跳過後續
+- 正確：每個 async 操作獨立 try-catch，確保 `controller.close()` 一定執行
+- 來源：PR #134 — SSE stream memory leak
+
+**Tool 執行需要 timeout 保護**
+- Promise.race + setTimeout 包裝所有外部工具呼叫
+- 避免單一工具掛住整個 agentic loop
+- 預設 30 秒，可配置
+
+**Per-resource rate limiting**
+- 全域 rate limit 不夠 → 需要 per-conversation / per-resource 限制
+- 防止單一資源被 rapid-fire 攻擊
+
+**sanitize 策略：替換優於刪除**
+- 危險 pattern 替換為 `[REDACTED]`（而非靜默移除）
+- 保留 context 便於安全審計
+- 正規化空白時保留換行符（`[^\S\n]+` 而非 `\s+`）
+
+### 架構重構
+
+**Config-driven mapping 優於 switch**
+- `Record<string, Type>` map + fallback 比 switch 更易擴展
+- 例：`TOOL_TO_AGENT_TYPE` map 取代 detectAgentType switch
+
+**Token budget 控制**
+- Agentic loop 必須有 token 總預算上限
+- 超過時 graceful 中斷，不要無聲耗盡 context
+- 追蹤累積 usage 並在每輪檢查
+
+### 測試（Agent/Tool 相關）
+
+**mock 結構必須反映真實依賴**
+- 新增 rate limiter → 所有依賴該模組的測試都需要更新 mock
+- 新增 export → 驗證測試可以 import
+- `db.select().from().where()` chain 不易 mock → 考慮用 `findMany` + TODO
+
+**E2E timeout 配置**
+- `expect.timeout` 和 `use.actionTimeout` 要明確設定
+- CI 環境加 retry（`retries: process.env.CI ? 2 : 0`）
 
 ### Git 工作流
 
