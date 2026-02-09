@@ -1,0 +1,8 @@
+{
+  "name": "stock",
+  "description": "台股看盤應用開發 Skill，涵蓋 TWSE/Yahoo API 整合、投資組合管理、E2E 測試指南",
+  "version": "1.0.0",
+  "author": {
+    "name": "Terry Chen"
+  }
+}
