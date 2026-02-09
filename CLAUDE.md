@@ -70,10 +70,11 @@ Current plugin requirements:
 
 ## Current Plugins
 
-| Plugin | Version | npm Package |
-|--------|---------|-------------|
-| hetzner | 1.2.0 | hetzner-mcp-server |
-| coolify | 1.3.1 | jurislm-coolify-mcp |
+| Plugin | Version | Type | 說明 |
+|--------|---------|------|------|
+| hetzner | 1.2.0 | MCP Server | hetzner-mcp-server（14 工具） |
+| coolify | 1.3.1 | MCP Server | jurislm-coolify-mcp（35 工具） |
+| lawyer | 1.0.0 | Skill Only | Payload CMS + 部署 + E2E 測試指南 |
 
 ## Gotchas
 

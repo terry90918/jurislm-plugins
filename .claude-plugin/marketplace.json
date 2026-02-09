@@ -22,6 +22,15 @@
       "author": {
         "name": "Terry Chen"
       }
+    },
+    {
+      "name": "lawyer",
+      "source": "./plugins/lawyer",
+      "description": "劉尹惠律師事務所網站開發 Skill，涵蓋 Payload CMS、部署、測試工作流",
+      "version": "1.0.0",
+      "author": {
+        "name": "Terry Chen"
+      }
     }
   ]
 }
