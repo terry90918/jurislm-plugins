@@ -85,7 +85,7 @@ Slug 自動生成保留 CJK 字元（`\u4e00-\u9fff`），在 `beforeValidate` h
 | 環境 | 分支 | 網址 | Coolify UUID |
 |------|------|------|-------------|
 | Production | `main` | https://lawyer.jurislm.com | `xckckgo84kwk8044wockkoso` |
-| Staging | `develop` | https://lawyer-staging.jurislm.com | `jgcwwwc04sk04skc84488wk8` |
+| Staging | `develop` | https://lawyer-dev.jurislm.com | `jgcwwwc04sk04skc84488wk8` |
 
 Push to branch → Coolify 自動部署（Nixpacks + bun）。
 

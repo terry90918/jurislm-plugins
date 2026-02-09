@@ -5,7 +5,7 @@
 | 項目 | Production | Staging |
 |------|-----------|---------|
 | 分支 | `main` | `develop` |
-| 網址 | https://lawyer.jurislm.com | https://lawyer-staging.jurislm.com |
+| 網址 | https://lawyer.jurislm.com | https://lawyer-dev.jurislm.com |
 | Coolify UUID | `xckckgo84kwk8044wockkoso` | `jgcwwwc04sk04skc84488wk8` |
 | 自動部署 | push to main | push to develop |
 
