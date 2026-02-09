@@ -42,8 +42,8 @@
       }
     },
     {
-      "name": "jurislm",
-      "source": "./plugins/jurislm",
+      "name": "jurislm-dev",
+      "source": "./plugins/jurislm-dev",
       "description": "JurisLM 台灣法律 AI 平台開發 Skill，涵蓋 Unified Agent、CLI、資料同步、法律分類",
       "version": "1.0.0",
       "author": {
