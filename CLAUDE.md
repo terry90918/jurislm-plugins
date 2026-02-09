@@ -25,9 +25,17 @@ This is a Claude Code Plugin Marketplace (`jurislm-plugins`) containing plugins 
 plugins/
   <plugin-name>/
     .claude-plugin/plugin.json   # Plugin metadata (name, description, version, author)
-    .mcp.json                    # MCP server configuration
+    .mcp.json                    # MCP server configuration (MCP Server type only)
     README.md                    # Plugin documentation
+    skills/                      # Skill definitions (Skill Only type only)
+      <skill-name>/
+        SKILL.md                 # Skill definition with YAML frontmatter
+        references/              # Reference files (optional)
 ```
+
+**Plugin Types**:
+- **MCP Server**: `.mcp.json` + `plugin.json` + `README.md`（如 hetzner, coolify）
+- **Skill Only**: `plugin.json` + `README.md` + `skills/`（如 lawyer, stock, jurislm-dev）
 
 ## Adding a New Plugin
 
@@ -85,6 +93,8 @@ Current plugin requirements:
 - **版本號必須同步**：`marketplace.json` 和 `plugin.json` 的版本必須一致
 - **環境變數名稱**：hetzner 用 `HETZNER_API_TOKEN`（不是 `HCLOUD_TOKEN`）
 - **description 語言**：使用繁體中文
+- **Plugin 名稱不可與 marketplace 同名**：`jurislm` plugin 在 `jurislm-plugins` marketplace 內會造成歧義，對話中無法區分指的是哪個。命名時加後綴區分（如 `jurislm-dev`）
+- **Skill-Only plugin 不需要 `.mcp.json`**：只有 MCP Server 類型的 plugin 需要 `.mcp.json`。Skill-Only plugin 結構為 `plugin.json` + `README.md` + `skills/` 目錄
 
 ## 經驗教訓
 
@@ -104,6 +114,45 @@ Current plugin requirements:
 
 - 環境變數定義在 `~/.zshenv`（推薦）而非 `~/.zshrc`，確保非互動式 shell 也能讀取
 - Claude Code 的 MCP Server 是子進程，`~/.zshrc` 可能不會被 source
+
+### Project Skills → Plugin 遷移
+
+從 project-scoped skills（`.claude/skills/`）遷移到 marketplace plugin 時：
+
+**命名陷阱**
+- Plugin 名稱不可與 marketplace 名稱重疊（例：`jurislm` plugin 在 `jurislm-plugins` marketplace → 歧義）
+- 解法：加後綴 `-dev`、`-platform` 等區分，例 `jurislm-dev`
+- 來源：jurislm plan-a 遷移 — 初次命名 `jurislm` 造成對話混淆，事後改名
+
+**遷移內容必須更新過時引用**
+- SKILL.md 中的觸發詞、技術棧表、目錄結構必須反映當前架構
+- reference 檔案若描述舊架構（如 LangGraph 12-Node → Unified Agent），必須重寫而非原封複製
+- 原封複製的檔案（CLI commands、database schema 等穩定內容）可直接 `cp`
+
+**Skill-Only plugin 結構**
+```
+plugins/<name>/
+├── .claude-plugin/plugin.json   # name, description, version, author
+├── README.md                    # 安裝指令、適用場景、技術棧
+└── skills/
+    └── <skill-name>/
+        ├── SKILL.md             # 含 YAML frontmatter（name, description, version）
+        └── references/          # 參考文件（可選）
+```
+- 無需 `.mcp.json`（MCP Server 類型才需要）
+- 一個 plugin 可包含多個 skills（如 jurislm-dev 包含 3 個）
+
+**安裝流程**
+1. `git push` 到 marketplace repo
+2. `/plugin marketplace update <marketplace-name>` — 必須先更新 marketplace 索引
+3. `/plugin install <plugin-name>@<marketplace-name>` — 才能安裝
+4. 重啟 Claude Code — skills 才會載入
+- 跳過步驟 2 會導致 `Plugin not found`
+
+**清理 project skills**
+- `git rm -r .claude/skills/<name>` 刪除舊 skills
+- 保留同目錄下不相關的 skills（如 `openspec-*`、`document-generation`）
+- 分開 commit：plugin 建立（jurislm-plugins repo）和 skill 刪除（app repo）應各自獨立 commit
 
 ---
 
