@@ -5,7 +5,7 @@ description: This skill should be used when encountering bugs, debugging issues,
 
 # 跨專案開發經驗模式庫
 
-從實際踩坑中提煉的 58+ 個關鍵教訓與改進方案，按主題分類。每個模式包含問題描述、根因分析、正確解法。
+從實際踩坑中提煉的 53 個關鍵教訓與改進方案，按主題分類。每個模式包含問題描述、根因分析、正確解法。
 
 ---
 
@@ -747,7 +747,7 @@ bun run test         # 測試（含 E2E 連雲端 DB）
 
 > 來源：JurisLM 9-phase 雲端遷移計畫（2026-02-09）
 
-### 模式 43：Payload CMS Production Migration — `push: true` 是 dev-only
+### 模式 59：Payload CMS Production Migration — `push: true` 是 dev-only
 
 **問題**：Payload CMS 新 production DB 啟動後所有 table 不存在，runtime 報 `relation "users" does not exist`。盲目加 `push: true` 到 postgres adapter 無效。
 
