@@ -102,6 +102,7 @@ JurisLM 台灣法律 AI 平台開發 Skill（3 個 skills）。
 GitHub Actions 標準化工作流 Skill。
 
 **涵蓋：**
+- Husky pre-commit hook（格式化、lint、typecheck、test）
 - Release Please 自動版本管理
 - Claude Code GitHub Action 配置
 - Claude Code 自動 PR Review

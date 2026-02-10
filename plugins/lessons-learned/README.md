@@ -4,9 +4,9 @@
 
 ## 功能
 
-- **63 個經驗模式**，按 11 個主題分類
+- **66 個經驗模式**，按 12 個主題分類
 - 每個模式包含：問題描述、根因分析、正確解法、來源專案
-- 涵蓋：診斷除錯、測試策略、基礎設施、安全防護、架構重構、Git 工作流、業務邏輯、雲端遷移、前端工具鏈、Docker 部署
+- 涵蓋：診斷除錯、測試策略、基礎設施、安全防護、架構重構、Git 工作流、業務邏輯、雲端遷移、前端工具鏈、Docker 部署、資料匯入與 Migration
 
 ## 安裝
 
@@ -36,6 +36,7 @@
 | H. 雲端遷移與環境配置 | 6 | pg_class.reltuples、Bun.serve idleTimeout、Payload CMS Migration |
 | I. 前端工具鏈與框架 | 3 | Tailwind CSS v4、設計系統一致性、TypeScript 錯誤診斷 |
 | J. Turborepo Docker 部署 | 4 | turbo prune、Coolify ARG 注入、COPY node_modules、serveStatic 路徑 |
+| K. 資料匯入與 Migration | 3 | Migration 手動建表 checksum、CSV 解析防禦、日期合法性 vs 格式驗證 |
 
 ## 授權
 

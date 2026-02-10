@@ -5,7 +5,7 @@ description: This skill should be used when encountering bugs, debugging issues,
 
 # 跨專案開發經驗模式庫
 
-從實際踩坑中提煉的 63 個關鍵教訓與改進方案，按主題分類。每個模式包含問題描述、根因分析、正確解法。
+從實際踩坑中提煉的 66 個關鍵教訓與改進方案，按主題分類。每個模式包含問題描述、根因分析、正確解法。
 
 ---
 
@@ -1040,3 +1040,109 @@ serveStatic({ root: "/app/jurislm_dashboard/dist" })
 ```
 
 > 來源：JurisLM Dashboard 靜態檔案 404（2026-02-09）
+
+---
+
+## K. 資料匯入與 Migration（3 個模式）
+
+### 模式 65：Migration 手動建表補登的 checksum 陷阱
+
+**問題**：手動 `CREATE TABLE` 建立了資料表，事後才發現有 migration 系統。往 `migrations` 表補登記錄時，用了 `md5()` 算 checksum（32 字元），但系統用 SHA256（64 字元）；sql_content 用佔位符（`-- 已手動建立`）而非完整 SQL。
+
+**後果**：
+- `db status` 報 checksum mismatch（長度不同、演算法不同）
+- 未來重建 DB 跑 `db migrate` 時，migration 記錄與本地檔案不一致
+
+**正確做法**：
+1. **永遠先建 migration 檔** → 跑 `db migrate` → 系統自動記錄正確 checksum + sql_content
+2. 如果已手動建表，補登時必須：
+   - 用 `calculateChecksum(filePath)` 同樣的 SHA256 算法
+   - 存入完整 SQL content（不是佔位符）
+
+```bash
+# 驗證 checksum 一致
+node -e "
+const { createHash } = require('crypto');
+const content = require('fs').readFileSync('path/to/migration.sql');
+console.log(createHash('sha256').update(content).digest('hex'));
+"
+```
+
+**教訓**：
+1. 手動建表是反模式 — migration 系統存在就必須使用
+2. checksum 演算法必須與系統一致（SHA256 not MD5）
+3. 補登後一定要跑 `db status` 驗證無 mismatch
+
+> 來源：jurislm plan-b deleted_judgments 表建立 — 用 md5 補登導致 checksum mismatch（2026-02-10）
+
+### 模式 66：外部 CSV 資料解析防禦
+
+**問題**：用 regex 解析司法院 Delete-Infor.csv，匹配率 0%。
+
+**根因**：
+1. **CRLF 行尾**：Windows 格式 `\r\n`，regex `$` 前殘留 `\r`
+2. **JID 格式多變**：有 5 段（`TPH,106,重上,41,20180427`）和 6 段（`TPSV,106,台抗,1132,,20171026`），尾逗號
+3. **引號包裹**：部分欄位有雙引號，部分沒有
+
+**正確做法**：
+```typescript
+// 1. 先清理 CRLF
+const clean = text.replace(/\r/g, "");
+
+// 2. 用 position-based parsing 取代 regex
+const lines = clean.split("\n").filter(Boolean);
+for (const line of lines) {
+  const firstQuote = line.indexOf('"');
+  const lastQuote = line.lastIndexOf('"');
+  const jid = line.substring(firstQuote + 1, lastQuote).replace(/,+$/, ""); // 移除尾逗號
+  const meta = line.substring(0, firstQuote - 1); // 引號前的部分
+  const [deletedDate, yearMonth, courtName] = meta.split(",");
+}
+```
+
+**教訓**：
+1. 處理外部資料前，先下載真實資料觀察實際格式
+2. Regex 匹配外部 CSV 很脆弱 — 欄位數量、引號、逗號都可能變化
+3. 寫完 parser 後，用真實資料跑 100% 匹配率驗證
+4. 測試必須包含 edge cases：CRLF、混合行尾、5 段/6 段 JID、尾逗號
+
+> 來源：jurislm plan-b Delete-Infor.csv 匯入 — regex 0% 匹配率（2026-02-10）
+
+### 模式 67：日期合法性 vs 格式驗證（batch INSERT 全批失敗）
+
+**問題**：8 位日期字串 `20210231` 通過 regex `/^\d{8}$/` 驗證，但 2 月 31 日不存在。
+
+**嚴重後果**：PostgreSQL UNNEST batch INSERT 是 all-or-nothing — 一筆壞日期導致整個 batch（可能 1000 筆）全部 rollback。
+
+**正確做法**：
+
+```typescript
+function isValidDate(dateStr: string): boolean {
+  const year = parseInt(dateStr.substring(0, 4));
+  const month = parseInt(dateStr.substring(4, 6));
+  const day = parseInt(dateStr.substring(6, 8));
+
+  if (month < 1 || month > 12 || day < 1) return false;
+
+  const maxDays = new Date(year, month, 0).getDate(); // 該月最大天數
+  return day <= maxDays; // 自動處理閏年
+}
+```
+
+**防禦性批次 INSERT**：
+```typescript
+const valid = records.filter(r => isValidDate(r.date));
+const skipped = records.length - valid.length;
+if (skipped > 0) logger.warn(`跳過 ${skipped} 筆不合法日期`);
+
+// 只 INSERT 驗證通過的記錄
+await sql`INSERT INTO ... SELECT * FROM UNNEST(...) ON CONFLICT DO NOTHING`;
+```
+
+**教訓**：
+1. 格式驗證（regex）≠ 語義驗證（日期合法性）
+2. UNNEST batch INSERT 沒有 partial success — 一筆壞資料全批失敗
+3. 外部資料匯入必須在 INSERT 前做完整驗證 + 過濾
+4. 記錄 skipped count + logger.warn，便於後續除錯
+
+> 來源：jurislm plan-b Delete-Infor.csv 日期驗證 — 2/31 導致 batch INSERT 失敗（2026-02-10）
