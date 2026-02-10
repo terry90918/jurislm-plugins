@@ -151,7 +151,7 @@ Hono + React 19 + Vite 7 + Tailwind CSS v4 + postgres.js:
 | Environment | URL | Coolify UUID | Branch |
 |-------------|-----|-------------|--------|
 | Production | https://dashboard.jurislm.com | x0ck84okoggcoswcsoc8cggk | main |
-| Staging | https://dashboard-staging.jurislm.com | h48okgk0o44wgs4wo8cwgkkg | develop |
+| Development | https://dashboard-dev.jurislm.com | h48okgk0o44wgs4wo8cwgkkg | develop |
 
 **Key Features**:
 - Shared DB statistics (document counts, embedding coverage via `pg_class.reltuples`)
