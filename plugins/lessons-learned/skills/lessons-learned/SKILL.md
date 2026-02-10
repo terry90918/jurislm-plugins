@@ -1146,3 +1146,40 @@ await sql`INSERT INTO ... SELECT * FROM UNNEST(...) ON CONFLICT DO NOTHING`;
 4. 記錄 skipped count + logger.warn，便於後續除錯
 
 > 來源：jurislm plan-b Delete-Infor.csv 日期驗證 — 2/31 導致 batch INSERT 失敗（2026-02-10）
+
+### 模式 68：跨專案一致性 — Staging 環境防護模式
+
+**問題**：新服務（jurislm_dashboard）需要限制公開存取，直接實作 Basic Auth 但漏掉搜尋引擎防護層。用戶指出 lawyer 專案已有更完整的三層防護方案。
+
+**Lawyer 專案三層防護（Next.js 版本）**：
+1. **HTTP Basic Auth**：`middleware.ts` 檢查 `STAGING=true` → 要求認證（跳過 `/api/*`）
+2. **robots.txt**：`STAGING=true` 時回傳 `Disallow: /`
+3. **X-Robots-Tag**：`next.config.ts` 加 `noindex, nofollow, noarchive` header
+
+**Hono 版本（jurislm_dashboard）**：
+```typescript
+if (config.STAGING === "true") {
+  app.get("/robots.txt", (c) => c.text("User-agent: *\nDisallow: /\n"));
+  app.use("*", async (c, next) => {
+    await next();
+    c.header("X-Robots-Tag", "noindex, nofollow, noarchive");
+  });
+  app.use("*", async (c, next) => {
+    if (c.req.path.startsWith("/api/")) return next();
+    return auth(c, next);
+  });
+}
+```
+
+**關鍵設計決策**：
+- `STAGING=true` 環境變數控制開關（非寫死）
+- `/api/*` 路由豁免認證（webhook/健康檢查需要）
+- `/api/health` 在 auth middleware 之前註冊
+- 帳密：`STAGING_USER` / `STAGING_PASSWORD`（預設 admin/staging2026）
+
+**教訓**：
+1. 實作前先 `grep -r "STAGING\|basicAuth\|Basic Auth"` 搜尋現有專案做法
+2. 確保跨專案一致性 — 同類問題用同樣的解法模式
+3. 搜尋引擎防護（robots.txt + X-Robots-Tag）和認證（Basic Auth）是兩個獨立的防護層，不可省略
+
+> 來源：jurislm dashboard staging 防護 — 對齊 lawyer 三層防護模式（2026-02-10）

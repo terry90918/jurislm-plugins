@@ -158,6 +158,14 @@ Hono + React 19 + Vite 7 + Tailwind CSS v4 + postgres.js:
 - Sync monitoring and system health
 - Direct postgres.js queries to jurislm_shared_db
 
+**Staging Protection** (3-layer, aligned with lawyer project):
+- Layer 1: `robots.txt` returns `Disallow: /` when `STAGING=true`
+- Layer 2: `X-Robots-Tag: noindex, nofollow, noarchive` header on all responses
+- Layer 3: Hono `basicAuth` middleware on non-`/api/*` routes
+- `/api/health` exempt for Coolify health checks
+- Env vars: `STAGING=true`, `STAGING_USER` (default: admin), `STAGING_PASSWORD` (default: staging2026)
+- Both prod and dev dashboards have `STAGING=true` set in Coolify
+
 **Configuration Notes**:
 - `Bun.serve` `idleTimeout` defaults to 10s; set to 120s for remote DB queries
 - Uses CSS variables from `globals.css` consistent with jurislm_app's design system
