@@ -4,10 +4,11 @@
 
 ## 功能
 
-為新專案或現有專案快速建立 4 個標準化配置檔：
+為新專案或現有專案快速建立 5 個標準化配置檔：
 
 | 檔案 | 用途 |
 |------|------|
+| `.husky/pre-commit` | Husky pre-commit hook（格式化、lint、typecheck、test） |
 | `.github/workflows/release.yml` | Release Please 自動版本管理 |
 | `.github/workflows/claude.yml` | Claude Code GitHub Action（@claude 互動） |
 | `.github/workflows/claude-code-review.yml` | Claude Code 自動 PR Review |

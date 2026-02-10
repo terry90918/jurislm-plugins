@@ -85,7 +85,7 @@ plugins/
 | lawyer | 1.2.0 | Skill Only | Payload CMS + 部署 + E2E 測試指南 |
 | stock | 1.1.0 | Skill Only | TWSE/Yahoo API + 投資組合 + E2E 測試 |
 | jurislm-dev | 1.1.0 | Skill Only | Unified Agent + CLI + Dashboard + 資料同步 + 法律分類（3 skills） |
-| github-release | 1.0.0 | Skill Only | Release Please + Claude Code Review + Release Notes |
+| github-release | 1.1.0 | Skill Only | Release Please + Claude Code Review + Release Notes + Husky pre-commit |
 | lessons-learned | 1.6.0 | Skill Only | 63 經驗模式：診斷除錯、測試、基礎設施、安全、架構、業務邏輯、雲端遷移、前端工具鏈、Docker 部署 |
 
 ## 注意事項

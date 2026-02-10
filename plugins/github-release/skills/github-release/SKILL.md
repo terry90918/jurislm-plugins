@@ -1,18 +1,19 @@
 ---
 name: github-release
-description: This skill should be used when the user asks to "set up GitHub Actions", "add release workflow", "add CI/CD", "configure Release Please", "add Claude Code review", "set up automated releases", or wants to standardize GitHub workflows for a new or existing project. Activate when user mentions GitHub Actions, release automation, or CI/CD setup.
+description: This skill should be used when the user asks to "set up GitHub Actions", "add release workflow", "add CI/CD", "configure Release Please", "add Claude Code review", "set up automated releases", "add pre-commit hook", "set up Husky", or wants to standardize GitHub workflows for a new or existing project. Activate when user mentions GitHub Actions, release automation, CI/CD setup, or git hooks.
 ---
 
 # GitHub Release 標準化工作流指南
 
-為所有專案提供一致的 GitHub Actions 配置，涵蓋自動版本管理、Claude Code 整合與 Release Notes 分類。
+為所有專案提供一致的 GitHub Actions 配置與 Git Hook 設定，涵蓋自動版本管理、Claude Code 整合、Release Notes 分類與 pre-commit 品質檢查。
 
 ## 標準配置檔清單
 
-每個專案應包含以下 4 個檔案：
+每個專案應包含以下 5 個檔案：
 
 | 檔案 | 觸發條件 | 用途 |
 |------|----------|------|
+| `.husky/pre-commit` | git commit | Husky pre-commit hook（格式化、lint、typecheck、test） |
 | `.github/workflows/release.yml` | push to main | Release Please 自動建立 release PR |
 | `.github/workflows/claude.yml` | @claude 留言 | Claude Code 回應 issue/PR 中的 @claude 指令 |
 | `.github/workflows/claude-code-review.yml` | PR opened/synced | Claude Code 自動 PR Review |
@@ -20,9 +21,87 @@ description: This skill should be used when the user asks to "set up GitHub Acti
 
 ## 檔案模板
 
+### 0. Git Hook — Husky Pre-commit（`.husky/pre-commit`）
+
+在每次 commit 前自動執行品質檢查，確保不合格的代碼無法進入 repository。
+
+> 參考來源：`references/pre-commit.md`
+
+**安裝 Husky**：
+
+```bash
+bun add -D husky
+bunx husky init
+```
+
+**pre-commit hook 內容**：
+
+```sh
+#!/bin/sh
+
+# 顏色定義
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+echo "${BLUE}Running pre-commit checks...${NC}"
+
+# 前置檢查
+STAGED_FILES=$(git diff --cached --name-only)
+if [ -z "$STAGED_FILES" ]; then
+    echo "${YELLOW}No staged files to commit. Skipping pre-commit checks.${NC}"
+    exit 0
+fi
+
+# 1. 代碼格式化
+echo "${BLUE}[format] Auto-formatting code...${NC}"
+if ! bun format; then
+    echo "${RED}[format] Format failed!${NC}"
+    exit 1
+fi
+echo "${GREEN}[format] Code formatted!${NC}"
+git diff --cached --name-only --diff-filter=ACMR -z | xargs -0 -I {} git add "{}"
+
+# 2. 代碼風格檢查
+echo "${BLUE}[lint] Running ESLint...${NC}"
+if ! bun lint; then
+    echo "${RED}[lint] Lint failed!${NC}"
+    exit 1
+fi
+echo "${GREEN}[lint] Lint passed!${NC}"
+
+# 3. TypeScript 類型檢查
+echo "${BLUE}[typecheck] Running type checks...${NC}"
+if ! bun typecheck; then
+    echo "${RED}[typecheck] Type check failed!${NC}"
+    exit 1
+fi
+echo "${GREEN}[typecheck] Type check passed!${NC}"
+
+# 4. 單元測試
+echo "${BLUE}[test] Running unit tests...${NC}"
+if ! bunx vitest run; then
+    echo "${RED}[test] Tests failed!${NC}"
+    exit 1
+fi
+echo "${GREEN}[test] All tests passed!${NC}"
+
+echo ""
+echo "${GREEN}All pre-commit checks passed!${NC}"
+```
+
+**自訂**：
+- 依專案需求增減步驟，至少保留 format + lint + typecheck
+- 確保 `package.json` 中定義了 `format`、`lint`、`typecheck` scripts
+- 若使用 OpenSpec，加入 `bunx @fission-ai/openspec validate --specs` 步驟
+
 ### 1. Release Please（`.github/workflows/release.yml`）
 
 自動依據 Conventional Commits 產生版本號與 changelog，建立 release PR。
+
+> 參考來源：`references/release-yml.md`
 
 ```yaml
 name: Release Please
@@ -57,6 +136,8 @@ jobs:
 ### 2. Claude Code Action（`.github/workflows/claude.yml`）
 
 在 issue/PR 中使用 @claude 與 Claude Code 互動。
+
+> 參考來源：`references/claude-yml.md`
 
 ```yaml
 name: Claude Code
@@ -104,6 +185,8 @@ jobs:
 
 PR 開啟或更新時自動觸發 Claude Code Review。
 
+> 參考來源：`references/claude-code-review-yml.md`
+
 ```yaml
 name: Claude Code Review
 
@@ -139,6 +222,8 @@ jobs:
 ### 4. Release Notes 分類（`.github/release.yml`）
 
 GitHub 自動產生 Release Notes 時的分類規則。
+
+> 參考來源：`references/release-notes-yml.md`
 
 ```yaml
 changelog:
@@ -196,12 +281,13 @@ changelog:
 
 為新專案設定時，依序執行：
 
-1. 建立 `.github/workflows/` 目錄
-2. 複製上述 4 個檔案
-3. 在 GitHub Repo Settings 設定：
+1. 安裝 Husky 並建立 pre-commit hook
+2. 建立 `.github/workflows/` 目錄
+3. 複製上述 4 個 GitHub 配置檔
+4. 在 GitHub Repo Settings 設定：
    - **Secrets**: 新增 `CLAUDE_CODE_OAUTH_TOKEN`
    - **Actions permissions**: 啟用「Allow GitHub Actions to create and approve pull requests」
-4. 確認 `package.json` 存在（Release Please `release-type: node` 需要）
+5. 確認 `package.json` 存在（Release Please `release-type: node` 需要）
 
 ## 前置需求
 
@@ -215,15 +301,22 @@ changelog:
 ### Repo Settings
 
 - **Actions → General → Workflow permissions**:
-  - ✅ Read and write permissions
-  - ✅ Allow GitHub Actions to create and approve pull requests
+  - Read and write permissions
+  - Allow GitHub Actions to create and approve pull requests
+
+### Husky
+
+```bash
+bun add -D husky
+bunx husky init
+```
 
 ## 已套用的專案
 
 | 專案 | 狀態 |
 |------|------|
-| terry90918/stock | ✅ 4 檔齊全 |
-| terry90918/lawyer-app | ✅ 4 檔齊全 |
+| terry90918/stock | 5 檔齊全 |
+| terry90918/lawyer-app | 5 檔齊全 |
 
 ## PR 必做項目
 
@@ -243,3 +336,4 @@ gh pr edit <num> --add-assignee terry90918       # 指定負責人
 - `release-type: node` 適用於有 `package.json` 的專案；其他語言請改為對應類型（如 `python`、`go` 等）
 - Claude Code Review 的 `prompt` 使用了 `${{ github.repository }}` 和 `${{ github.event.pull_request.number }}`，這些是 GitHub context 變數，安全且不涉及使用者輸入注入
 - `.github/release.yml` 不是 workflow，是 GitHub Release Notes 的配置檔，放在 `.github/` 根目錄下
+- `.husky/pre-commit` 需要 `chmod +x` 執行權限（`bunx husky init` 會自動處理）
