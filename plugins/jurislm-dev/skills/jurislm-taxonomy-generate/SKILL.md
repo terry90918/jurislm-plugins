@@ -114,7 +114,7 @@ GROUP BY category ORDER BY category;
 - **Container not found**: Verify with `docker ps | grep shared_db`
 - **UUID fails**: On macOS, `uuidgen` is built-in; on Linux, install `uuid-runtime`
 - **Duplicate terms**: ON CONFLICT clause handles silently, no error
-- **Connection refused**: Ensure `jurislm_shared_db` container is running on port 5440
+- **Connection refused**: Ensure `jurislm_shared_db` is accessible on port 5442 (46.225.58.202)
 
 ## Session Example
 

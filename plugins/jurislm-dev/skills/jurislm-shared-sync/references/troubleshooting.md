@@ -8,7 +8,7 @@ Common issues and solutions for jurislm_shared_db synchronization.
 
 **Symptom**:
 ```
-Error: Connection refused to localhost:5440
+Error: Connection refused to 46.225.58.202:5442
 ```
 
 **Solution**:
@@ -299,7 +299,7 @@ cp .env.shared.example .env.shared
 grep SHARED_DATABASE_URL .env.shared
 
 # 4. Export manually for testing
-export SHARED_DATABASE_URL=postgresql://postgres:postgres@localhost:5440/jurislm_shared_db
+export SHARED_DATABASE_URL=postgresql://postgres:<password>@46.225.58.202:5442/jurislm_shared_db
 ```
 
 ### Wrong Database Target

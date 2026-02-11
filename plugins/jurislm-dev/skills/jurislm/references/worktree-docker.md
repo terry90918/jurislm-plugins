@@ -106,7 +106,7 @@ Update environment variables for worktree ports:
 DATABASE_URL=postgresql://postgres:postgres@localhost:6432/jurislm_db
 
 # Shared database (same for all worktrees)
-SHARED_DATABASE_URL=postgresql://postgres:postgres@localhost:5440/jurislm_shared_db
+SHARED_DATABASE_URL=postgresql://postgres:<password>@46.225.58.202:5442/jurislm_shared_db
 
 # Embedding provider (ollama = default, tei = backup)
 EMBEDDING_PROVIDER=ollama
@@ -189,7 +189,7 @@ To access shared database from worktree containers:
 
 ```yaml
 environment:
-  SHARED_DATABASE_URL: postgresql://postgres:postgres@host.docker.internal:5440/jurislm_shared_db
+  SHARED_DATABASE_URL: postgresql://postgres:<password>@46.225.58.202:5442/jurislm_shared_db
 ```
 
 ## Best Practices

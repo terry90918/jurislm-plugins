@@ -132,7 +132,7 @@ bun run src/index.ts sync judicial --category 051 --info
 | Option | Description | Default |
 |--------|-------------|---------|
 | `--category <list>` | Comma-separated category IDs (051,052,053,054) | all |
-| `--mode {phase}` | Execute only specified phase (download/unzip/parse/chunk/embed/zip/nas) | all |
+| `--mode {phase}` | Execute only specified phase (download/unzip/parse/chunk/embed/zip/nas/db_upload/import/cleanup) | all |
 | `--strategy {name}` | Chunk strategy (metadata-context only) | metadata-context |
 | `--limit N` | Limit number of **judgments** to process (cross-fileset) | unlimited |
 | `--dataset ID` | Process only specified dataset ID | - |
@@ -160,7 +160,7 @@ bun run src/index.ts sync judicial --category 051 --info
 
 ### sync law
 
-Synchronize law data from Ministry of Justice (7-stage pipeline).
+Synchronize law data from Ministry of Justice (9-stage pipeline).
 
 ```bash
 # Full sync (all 11,737 laws/orders)
@@ -174,15 +174,13 @@ bun run src/index.ts sync law --pcode A0000001,A0000002
 bun run src/index.ts sync law --mode download    # Download ChLaw.zip + ChOrder.zip
 bun run src/index.ts sync law --mode embed       # Generate embeddings only
 bun run src/index.ts sync law --mode import      # Import to database only
+bun run src/index.ts sync law --mode cleanup     # Cleanup intermediate files only
 
 # Limit processing
 bun run src/index.ts sync law --limit 10
 
 # Force reprocess (ignore completed markers)
 bun run src/index.ts sync law --force
-
-# Sync and import to database
-bun run src/index.ts sync law --import
 
 # Verbose output
 bun run src/index.ts sync law --info
@@ -193,17 +191,16 @@ bun run src/index.ts sync law --info
 | Option | Description | Default |
 |--------|-------------|---------|
 | `--pcode <list>` | Comma-separated pcode list (filters at PARSE phase) | all |
-| `--mode {phase}` | Execute only specified phase (download/unzip/parse/chunk/embed/zip/nas/import) | all |
+| `--mode {phase}` | Execute only specified phase (download/unzip/parse/chunk/embed/zip/nas/import/cleanup) | all |
 | `--strategy {name}` | Chunk strategy (metadata-context only) | metadata-context |
 | `--limit N` | Limit number of laws to process | unlimited |
 | `--force` | Force reprocess completed laws | false |
-| `--import` | Import to database after embedding | false |
 | `--info` | Verbose output | false |
 
 **Option Conflicts**:
 - `--pcode` + `--limit` cannot be used together
 
-**Pipeline Stages**:
+**Pipeline Stages** (9-stage, auto import + cleanup):
 1. **DOWNLOAD** - Fetch ChLaw.zip + ChOrder.zip from MOJ API
 2. **UNZIP** - Extract JSON files
 3. **PARSE** - Parse JSON, extract pcode, merge article content, output source.json
@@ -212,6 +209,7 @@ bun run src/index.ts sync law --info
 6. **ZIP** - Compress output files
 7. **NAS** - Upload to Synology NAS
 8. **IMPORT** - Import to database (laws, law_articles, law_attachments, law_embeddings)
+9. **CLEANUP** - Remove intermediate files (pcode dirs, ChLaw.json, ChOrder.json)
 
 ## Taxonomy Commands (taxonomy)
 
@@ -337,17 +335,17 @@ bun run src/index.ts evaluate baseline-expanded -k 5 -s 0.7 -e 5
 
 ```bash
 # Database
-DATABASE_URL=postgresql://postgres:postgres@localhost:5433/jurislm_db
+DATABASE_URL=postgresql://postgres:<password>@46.225.58.202:5444/jurislm_db
 
 # Shared database
-SHARED_DATABASE_URL=postgresql://postgres:postgres@localhost:5440/jurislm_shared_db
+SHARED_DATABASE_URL=postgresql://postgres:<password>@46.225.58.202:5442/jurislm_shared_db
 
 # Judicial API
 JUDICIAL_USERNAME=your_username
 JUDICIAL_PASSWORD=your_password
 
 # Embedding Provider (ollama = primary, tei = backup)
-EMBEDDING_PROVIDER=ollama           # Options: ollama | tei
+EMBEDDING_PROVIDER=ollama           # Options: ollama | mlx | tei
 # Ollama default URL: http://localhost:11434
 # TEI default URL: http://localhost:8090
 ```
@@ -398,11 +396,12 @@ jurislm_cli/
 │   ├── core/
 │   │   ├── context.ts       # Execution context
 │   │   ├── phase.ts         # Phase definitions
-│   │   ├── pipeline.ts      # Pipeline orchestrator
-│   │   └── embedding-providers/  # TEI/Ollama providers
+│   │   ├── pipeline/         # Pipeline orchestrator
+│   │   │   └── sync-pipeline.ts
+│   │   └── embedding-providers/  # Ollama/MLX/TEI providers
 │   └── adapters/
 │       ├── db/              # Database adapters
-│       └── worker/          # Worker adapters (7 phases)
+│       └── worker/          # Worker adapters (9 phases)
 └── tests/
     ├── unit/                # Unit tests
     └── integration/         # Integration tests
@@ -435,11 +434,11 @@ docker exec jurislm_db psql -U postgres -d jurislm_db -c "\dt"
 # 1. Start shared services
 docker compose -f docker-compose.shared.yml up -d
 
-# 2. Sync judicial data
+# 2. Sync judicial data (auto DB upload + cleanup)
 cd jurislm_cli
 bun run src/index.ts sync judicial
 
-# 3. Sync law data
+# 3. Sync law data (auto import + cleanup)
 bun run src/index.ts sync law
 
 # 4. Verify counts

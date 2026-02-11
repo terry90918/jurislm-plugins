@@ -327,7 +327,7 @@ const results = await db.execute(sql`
 ```bash
 # Database
 DATABASE_URL=postgresql://postgres:postgres@localhost:5433/jurislm_db
-SHARED_DATABASE_URL=postgresql://postgres:postgres@localhost:5440/jurislm_shared_db
+SHARED_DATABASE_URL=postgresql://postgres:<password>@46.225.58.202:5442/jurislm_shared_db
 
 # Authentication
 GOOGLE_CLIENT_ID=xxx

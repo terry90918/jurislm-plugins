@@ -21,7 +21,7 @@ run-sync.sh (wrapper)
     ├── Precheck Ollama
     └── Execute: bun run src/index.ts sync judicial --category <cat>
          ├── Discord: Sync Start
-         ├── 7-stage pipeline
+         ├── 9-stage pipeline
          └── Discord: Sync Complete/Failed
 ```
 
@@ -48,7 +48,7 @@ run-sync.sh (wrapper)
 ### Prerequisites
 
 1. **Node.js/Bun** installed and in PATH
-2. **PostgreSQL** running on port 5440
+2. **PostgreSQL** running on port 5442 (Hetzner cloud)
 3. **Ollama** running on port 11434
 4. **Discord Webhook URL** (optional but recommended)
 

@@ -6,7 +6,7 @@ Complete database structure reference for JurisLM.
 
 | Metric | Value |
 |--------|-------|
-| Total Tables | 8 (local) + 19 (shared) = 27 |
+| Total Tables | 8 (local) + 19 (shared) = 27 (shared includes deleted_judgments) |
 | Local Migrations | 72 files |
 | Shared Migrations | 15 files |
 | Total Indexes | 30+ |
@@ -19,12 +19,10 @@ JurisLM uses two separate PostgreSQL databases:
 
 | Database | Port | Purpose |
 |----------|------|---------|
-| jurislm_db | 5433* | Local application data (auth, NextAuth, chat) |
-| jurislm_shared_db | 5440 | Shared judicial/law/taxonomy data (19 tables) |
+| jurislm_db | 5443 (prod) / 5444 (dev) | Application data (auth, NextAuth, chat) |
+| jurislm_shared_db | 5442 | Shared judicial/law/taxonomy data (25 tables) |
 
-*Port varies by worktree (main: 5432, plan-a: 5433, plan-b: 5434)
-
-**Shared Database Location**: Managed via `docker-compose.shared.yml`
+**Database Location**: Hosted on Hetzner (46.225.58.202), managed by Coolify.
 
 ## jurislm_db Tables (8 tables)
 
@@ -57,15 +55,16 @@ JurisLM uses two separate PostgreSQL databases:
 |-------|---------|------------|
 | migrations | Migration tracking | id, migration_name, checksum, created_at |
 
-## jurislm_shared_db Tables (19 tables)
+## jurislm_shared_db Tables (25 tables)
 
-### Judicial Open Data (11 tables)
+### Judicial Open Data (13 tables)
 
 | Table | Purpose | Key Fields |
 |-------|---------|------------|
 | categories | Category definitions (4 fixed) | category_no, category_name |
 | datasets | Dataset metadata | dataset_id, category_no |
 | filesets | Fileset tracking | fileset_id, dataset_id |
+| fileset_items | Fileset 內個別檔案追蹤 | id, fileset_id, file_name |
 | documents_051 | Judgments (~21.7M source) | jid, fileset_id, jfull |
 | documents_052 | Interpretations (~6,700 source) | jid, fileset_id, jfull |
 | documents_053 | Decisions (~455 source) | jid, fileset_id, jfull |
@@ -74,6 +73,7 @@ JurisLM uses two separate PostgreSQL databases:
 | document_embeddings_052 | Interpretation vectors | id, **document_id**, embedding |
 | document_embeddings_053 | Decision vectors | id, **document_id**, embedding |
 | document_embeddings_054 | Ruling vectors | id, **document_id**, embedding |
+| document_embedding_status | Embedding 處理狀態追蹤 | id, category_no, status |
 
 > **Schema Difference**: `document_embeddings_051` uses `jid` as the foreign key column, while 052/053/054 use `document_id`. This is a historical inconsistency that must be accounted for in queries spanning multiple categories.
 
@@ -86,14 +86,29 @@ JurisLM uses two separate PostgreSQL databases:
 | law_attachments | Law attachments | attachment_id, law_id, file_name, file_url |
 | law_embeddings | Law vectors | embedding_id, law_id, chunk_index, embedding |
 
-### Taxonomy (2 tables - in jurislm_shared_db)
+### Taxonomy (3 tables)
 
 | Table | Purpose | Key Fields |
 |-------|---------|------------|
 | legal_synonyms | Legal term synonym groups (2,600 groups, 9,990 records) | id, group_id, canonical_term, synonym, category |
+| legal_synonyms_meta | 同義詞元資料 | id, category, meta_key, meta_value |
 | legal_concept_hierarchy | Broader/narrower concept DAG | id, child_term, parent_term, relation_type, category |
 
 **Synonym Categories**: civil_debt, criminal, procedural, administrative, constitutional, labor, ip, corporate, tax, financial, family
+
+### Evaluation (2 tables)
+
+| Table | Purpose | Key Fields |
+|-------|---------|------------|
+| chunk_evaluation_runs | 評估執行記錄 | id, run_name, created_at |
+| chunk_evaluation_questions | 評估測試問題 | id, run_id, question, expected_answer |
+
+### System Tracking (2 tables)
+
+| Table | Purpose | Key Fields |
+|-------|---------|------------|
+| processing_jobs | 處理任務追蹤 | id, job_type, status, created_at |
+| deleted_judgments | 已刪除裁判追蹤 | id, jid, deleted_date, category_no |
 
 ### System (1 table)
 

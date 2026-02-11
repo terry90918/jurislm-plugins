@@ -4,7 +4,7 @@ Complete workflow for synchronizing judicial documents from Taiwan Judicial Yuan
 
 ## Overview
 
-Execute a seven-phase synchronization pipeline:
+Execute a nine-phase synchronization pipeline:
 
 1. **Download** - Fetch compressed filesets from Judicial Yuan API
 2. **Unzip** - Extract files (auto-detect ZIP/7Z/RAR)
@@ -13,6 +13,8 @@ Execute a seven-phase synchronization pipeline:
 5. **Embed** - Generate vectors via BAAI/bge-m3 (1024 dim)
 6. **Zip** - Compress output files
 7. **NAS** - Upload to Synology NAS
+8. **DB_Upload** - Upload documents and embeddings to shared database
+9. **Cleanup** - Remove intermediate files (extend/, embeddings.jsonl.gz)
 
 ### Metadata Context (CHUNK Phase)
 
@@ -70,7 +72,7 @@ docker compose ps
 - Embedding service - required for vector generation:
   - Ollama (port 11434) if `EMBEDDING_PROVIDER=ollama` (default)
   - TEI (port 8090) if `EMBEDDING_PROVIDER=tei`
-- Shared database (port 5440) - required for data storage
+- Shared database (port 5442) - required for data storage
 
 **Note**: Text chunking is performed locally using @langchain/textsplitters (no external service required).
 
@@ -112,7 +114,7 @@ Record counts for post-sync verification.
 | Option | Description | Default |
 |--------|-------------|---------|
 | `--category <list>` | Comma-separated category IDs (051,052,053,054) | all |
-| `--mode {phase}` | Execute only specified phase (download/unzip/parse/chunk/embed/zip/nas) | all |
+| `--mode {phase}` | Execute only specified phase (download/unzip/parse/chunk/embed/zip/nas/db_upload/import/cleanup) | all |
 | `--strategy {name}` | Chunk strategy (metadata-context only) | metadata-context |
 | `--limit N` | Limit number of **judgments** to process (cross-fileset counting) | unlimited |
 | `--dataset ID` | Process only specified dataset ID | - |
@@ -162,7 +164,7 @@ cat /path/to/fileset/status.json | jq
 ```
 
 **Status file contents**:
-- `phases` - Completion status for each of 7 phases
+- `phases` - Completion status for each of 9 phases
 - `total_count` - Total documents in fileset
 - `completed_count` - Processed documents
 - `error_count` - Failed documents
@@ -291,18 +293,22 @@ Tested with fileset 58452 (Category 051, 1,130 documents, 1,197 chunks):
 ## Pipeline Architecture
 
 ```
-+------------------------------------------------------------------------+
-|                          SyncPipeline                                   |
-|  +----------+ +--------+ +-------+ +-------+ +-------+ +-----+ +-----+ |
-|  | Download |>| Unzip  |>| Parse |>| Chunk |>| Embed |>| Zip |>| NAS | |
-|  +----------+ +--------+ +-------+ +-------+ +-------+ +-----+ +-----+ |
-|       |           |          |         |         |        |       |    |
-|       v           v          v         v         v        v       v    |
-|  +------------------------------------------------------------------+  |
-|  |                    status.json (7-stage tracking)                 |  |
-|  +------------------------------------------------------------------+  |
-+------------------------------------------------------------------------+
++--------------------------------------------------------------------------------------------------------------+
+|                                           SyncPipeline                                                        |
+|  +----------+ +--------+ +-------+ +-------+ +-------+ +-----+ +-----+ +-----------+ +---------+            |
+|  | Download |>| Unzip  |>| Parse |>| Chunk |>| Embed |>| Zip |>| NAS |>| DB_Upload |>| Cleanup |            |
+|  +----------+ +--------+ +-------+ +-------+ +-------+ +-----+ +-----+ +-----------+ +---------+            |
+|       |           |          |         |         |        |       |          |             |                  |
+|       v           v          v         v         v        v       v          v             v                  |
+|  +----------------------------------------------------------------------------------------------------------+|
+|  |                              status.json (9-stage tracking)                                               ||
+|  +----------------------------------------------------------------------------------------------------------+|
++--------------------------------------------------------------------------------------------------------------+
 ```
+
+**DB_Upload**: Uses `importCategory()` with dataset/fileset filters to ensure FK constraints (categories → datasets → filesets → documents → embeddings). All INSERTs use ON CONFLICT UPSERT for idempotent re-execution.
+
+**Cleanup**: Removes intermediate files (`extend/` directory and `embeddings.jsonl.gz`) while preserving `status.json` and archive files for checkpoint tracking.
 
 ## Environment Variables
 
@@ -310,7 +316,7 @@ Tested with fileset 58452 (Category 051, 1,130 documents, 1,197 chunks):
 # Required - Judicial Yuan API
 JUDICIAL_USERNAME=your_username
 JUDICIAL_PASSWORD=your_password
-SHARED_DATABASE_URL=postgresql://postgres:postgres@localhost:5440/jurislm_shared_db
+SHARED_DATABASE_URL=postgresql://postgres:<password>@46.225.58.202:5442/jurislm_shared_db
 
 # Embedding Provider Configuration (Required)
 # ollama = primary (default), tei = backup

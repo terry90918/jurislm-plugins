@@ -2,15 +2,16 @@
 
 Detailed command reference for full synchronization of jurislm_shared_db.
 
-## Complete Table List (19 Tables)
+## Complete Table List (25 Tables)
 
 ### System (1 table)
 - `migrations` - Migration tracking
 
-### Judicial (11 tables)
+### Judicial (13 tables)
 - `categories` - 4 fixed categories (051-054)
 - `datasets` - Dataset metadata
 - `filesets` - Fileset tracking
+- `fileset_items` - Fileset 內個別檔案追蹤
 - `documents_051` - 裁判書 (~21M)
 - `documents_052` - 大法官解釋 (~800)
 - `documents_053` - 憲法法庭判決 (~300)
@@ -19,6 +20,7 @@ Detailed command reference for full synchronization of jurislm_shared_db.
 - `document_embeddings_052` - 解釋向量
 - `document_embeddings_053` - 判決向量
 - `document_embeddings_054` - 裁定向量
+- `document_embedding_status` - Embedding 處理狀態追蹤
 
 ### Law (4 tables)
 - `laws` - 法規主表 (~11,737)
@@ -26,9 +28,18 @@ Detailed command reference for full synchronization of jurislm_shared_db.
 - `law_attachments` - 法規附件
 - `law_embeddings` - 法規向量
 
-### Taxonomy (2 tables)
+### Taxonomy (3 tables)
 - `legal_synonyms` - 法律同義詞
+- `legal_synonyms_meta` - 同義詞元資料
 - `legal_concept_hierarchy` - 概念階層 (DAG)
+
+### Evaluation (2 tables)
+- `chunk_evaluation_runs` - 評估執行記錄
+- `chunk_evaluation_questions` - 評估測試問題
+
+### System Tracking (2 tables)
+- `processing_jobs` - 處理任務追蹤
+- `deleted_judgments` - 已刪除裁判追蹤
 
 ## Table Dependencies (Foreign Key Chain)
 
@@ -70,7 +81,7 @@ docker compose -f docker-compose.shared.yml up -d
 
 # Verify running
 docker compose -f docker-compose.shared.yml ps
-# Expected: jurislm_shared_db (Port 5440), jurislm-tei-shared (Port 8090)
+# Expected: jurislm_shared_db (Port 5442), jurislm-tei-shared (Port 8090)
 
 # Check logs if issues
 docker compose -f docker-compose.shared.yml logs jurislm_shared_db
@@ -101,7 +112,7 @@ Required variables in `.env.shared`:
 
 ```bash
 # Database
-SHARED_DATABASE_URL=postgresql://postgres:postgres@localhost:5440/jurislm_shared_db
+SHARED_DATABASE_URL=postgresql://postgres:<password>@46.225.58.202:5442/jurislm_shared_db
 
 # Embedding
 OLLAMA_BASE_URL=http://localhost:11434
@@ -222,7 +233,7 @@ bun run src/index.ts sync judicial --category 051 --force
 bun run src/index.ts sync judicial --category 051 --info
 ```
 
-### Pipeline Phases
+### Pipeline Phases (9-stage)
 
 | Phase | Description | Output |
 |-------|-------------|--------|
@@ -233,17 +244,22 @@ bun run src/index.ts sync judicial --category 051 --info
 | EMBED | Generate bge-m3 embeddings | 1024-dim vectors stored in `chunk_*.json` |
 | ZIP | Compress embeddings | `data/judicial/{category}/embeddings/*.zip` |
 | NAS | Upload to Synology NAS | Remote backup |
+| DB_UPLOAD | Upload documents + embeddings to shared DB | `datasets`, `filesets`, `documents_*`, `document_embeddings_*` |
+| CLEANUP | Remove intermediate files | Deletes `extend/` dir + `embeddings.jsonl.gz` |
 
-### Import Mode (--mode import)
+**DB_Upload Phase**: Uses `importCategory()` with dataset/fileset filters for FK constraint ordering. All INSERTs use ON CONFLICT UPSERT — safe to re-execute.
 
-Import mode reads existing local files and inserts into database:
+**Cleanup Phase**: Removes `extend/` and `embeddings.jsonl.gz` while preserving `status.json` and archive files.
 
-| Step | Source | Target Table |
-|------|--------|--------------|
-| 1. Datasets | `meta.json` → `data[].datasetId` | `datasets` |
-| 2. Filesets | `meta.json` → `data[].filesets[]` | `filesets` |
-| 3. Documents | `extend/{period}/{court}/{JID}.json` | `documents_051/052/053/054` |
-| 4. Embeddings | `{JID}_embed/chunk_*.json` | `document_embeddings_051/052/053/054` |
+### DB Upload Only (--mode db_upload)
+
+If the pipeline completed but DB upload was skipped:
+
+```bash
+bun run src/index.ts sync judicial --category 051 --mode db_upload
+# Or use the backward-compatible alias:
+bun run src/index.ts sync judicial --category 051 --mode import
+```
 
 **FK Dependency Chain**:
 ```
@@ -260,11 +276,14 @@ categories (Migration) → datasets → filesets → documents_* → document_em
 ### Full Law Sync
 
 ```bash
-# Sync all laws (no DB import)
+# Sync all laws (9-stage: auto import + cleanup)
 bun run src/index.ts sync law
 
-# Sync with database import
+# Import only (if pipeline completed but import was skipped)
 bun run src/index.ts sync law --mode import
+
+# Cleanup only (remove intermediate files)
+bun run src/index.ts sync law --mode cleanup
 ```
 
 ### Sync Specific Law
@@ -291,17 +310,19 @@ bun run src/index.ts sync law --force
 bun run src/index.ts sync law --info
 ```
 
-### Law Pipeline Phases
+### Law Pipeline Phases (9-stage)
 
 | Phase | Description | Output |
 |-------|-------------|--------|
-| DOWNLOAD | Fetch from 法務部 API | `data/law/raw/*.json` |
-| PARSE | Parse law structure | Law objects with articles |
-| CHUNK | Split articles | Chunked content |
-| EMBED | Generate embeddings | 1024-dim vectors |
-| ZIP | Compress results | `data/law/embeddings/*.zip` |
-| NAS | Upload to NAS | Remote backup |
-| IMPORT | Insert to database | laws, law_articles, law_embeddings tables |
+| DOWNLOAD | Fetch ChLaw.zip + ChOrder.zip from 法務部 API | `data/law/ChLaw.zip`, `data/law/ChOrder.zip` |
+| UNZIP | Extract JSON files | `data/law/ChLaw.json`, `data/law/ChOrder.json` |
+| PARSE | Parse law structure, extract pcode | `{pcode}_embed_{strategy}/source.json` |
+| CHUNK | Split articles with Metadata Context | `{pcode}_embed_{strategy}/chunk_*.json` |
+| EMBED | Generate bge-m3 embeddings (1024 dim) | `{pcode}_embed_{strategy}/embed_*.json` |
+| ZIP | Compress embeddings | `embeddings_{strategy}.jsonl.gz` |
+| NAS | Upload to Synology NAS | Remote backup |
+| IMPORT | Insert to database | laws, law_articles, law_attachments, law_embeddings |
+| CLEANUP | Remove intermediate files | Deletes pcode dirs + ChLaw/ChOrder.json |
 
 ## Taxonomy Commands
 
@@ -340,7 +361,7 @@ bun run src/index.ts taxonomy stats --info
 
 ## Complete Sync Script
 
-Execute all sync steps in order:
+Execute all sync steps in order (pipelines now include auto DB upload/import + cleanup):
 
 ```bash
 #!/bin/bash
@@ -351,11 +372,11 @@ cd jurislm_cli
 echo "=== Step 1: Database Migration ==="
 bun run src/index.ts db migrate --target shared
 
-echo "=== Step 2: Judicial Sync (051-054) ==="
+echo "=== Step 2: Judicial Sync (9-stage: auto DB upload + cleanup) ==="
 bun run src/index.ts sync judicial --info
 
-echo "=== Step 3: Law Sync with Import ==="
-bun run src/index.ts sync law --mode import --info
+echo "=== Step 3: Law Sync (9-stage: auto import + cleanup) ==="
+bun run src/index.ts sync law --info
 
 echo "=== Step 4: Taxonomy Build ==="
 bun run src/index.ts taxonomy build --info
@@ -366,10 +387,10 @@ bun run src/index.ts db status --target shared --info
 
 ## Verification Queries
 
-### Complete 19-Table Count (Single Query)
+### Complete 25-Table Count (Single Query)
 
 ```sql
--- Verify ALL 19 tables have data
+-- Verify ALL 25 tables have data
 SELECT 'migrations' as table_name, COUNT(*) as count FROM migrations
 UNION ALL SELECT 'categories', COUNT(*) FROM categories
 UNION ALL SELECT 'datasets', COUNT(*) FROM datasets
@@ -464,11 +485,11 @@ WHERE count = 0;
 For daily/weekly updates (not full sync):
 
 ```bash
-# Sync only new judicial documents
+# Sync only new judicial documents (auto DB upload + cleanup)
 bun run src/index.ts sync judicial --category 051
 
-# Sync only new laws
-bun run src/index.ts sync law --mode import
+# Sync only new laws (auto import + cleanup)
+bun run src/index.ts sync law
 
 # The pipeline automatically skips already-processed items
 ```
@@ -487,7 +508,7 @@ bun run src/index.ts sync judicial --category 051
 bun run src/index.ts sync judicial --category 052,053,054
 
 # Terminal 3
-bun run src/index.ts sync law --mode import
+bun run src/index.ts sync law
 ```
 
 ### Memory Optimization

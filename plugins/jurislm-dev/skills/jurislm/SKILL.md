@@ -3,7 +3,7 @@ name: jurislm
 description: >-
   This skill should be used when the user asks about JurisLM platform development, architecture, or operations.
   Trigger phrases include: "jurislm_app", "jurislm_cli", "jurislm_db",
-  "db status", "db migrate", "db reset", "sync judicial", "sync law", "7-stage pipeline",
+  "db status", "db migrate", "db reset", "sync judicial", "sync law", "9-stage pipeline",
   "Unified Agent", "SKILL.md", "tool-registry", "agentic loop", "runUnifiedAgent",
   "shared database", "jurislm_shared_db",
   "jurislm_dashboard", "dashboard", "Hono", "Vite 7", "postgres.js", "admin dashboard",
@@ -55,7 +55,7 @@ docker compose -f docker-compose.shared.yml up -d
 
 | Service | Port | Purpose |
 |---------|------|---------|
-| jurislm_shared_db | 5440 | PostgreSQL (Judicial + Law + Taxonomy, 19 tables) |
+| jurislm_shared_db | 5442 | PostgreSQL (Judicial + Law + Taxonomy, 25 tables) |
 | jurislm-tei-shared | 8090 | TEI Embedding (backup, BAAI/bge-m3) |
 
 ### Shared Packages (packages/)
@@ -172,10 +172,10 @@ Hono + React 19 + Vite 7 + Tailwind CSS v4 + postgres.js:
 
 ### jurislm_cli (CLI Tool)
 
-7-stage pipeline orchestration with lazy loading architecture:
+9-stage pipeline orchestration with lazy loading architecture:
 
 ```
-Download -> Unzip -> Parse -> Chunk -> Embed -> Zip -> NAS
+Download -> Unzip -> Parse -> Chunk -> Embed -> Zip -> NAS -> DB_Upload -> Cleanup
 ```
 
 | Directory | Purpose |
@@ -183,7 +183,7 @@ Download -> Unzip -> Parse -> Chunk -> Embed -> Zip -> NAS
 | `src/commands/` | CLI command definitions (lazy loading) |
 | `src/commands/impl/` | Command implementations (heavy dependencies) |
 | `src/core/` | Pipeline engine, chunk strategies, embedding providers |
-| `src/adapters/worker/` | 7-stage executors (Judicial) |
+| `src/adapters/worker/` | 9-stage executors (Judicial) |
 | `src/adapters/law/` | Law sync workers |
 
 **Performance**: Lazy loading reduces `--help` startup time from ~1800ms to ~30ms (**98% improvement**).
@@ -202,7 +202,7 @@ Two databases with separate migrations:
 | Database | Port | Tables | Migrations |
 |----------|------|--------|------------|
 | jurislm_db | 5433 | Auth + NextAuth + Chat + Knowledge + Contract + Case | `migrations/` (77 files) |
-| jurislm_shared_db | 5440 | Judicial + Law + Taxonomy (19 tables) | `migrations-shared/` (15 files) |
+| jurislm_shared_db | 5442 | Judicial + Law + Taxonomy (25 tables) | `migrations-shared/` (15 files) |
 
 **Local Database Tables**:
 - Auth: users, accounts, sessions, verification_tokens
@@ -227,10 +227,10 @@ bun run src/index.ts db status                    # View migration status
 bun run src/index.ts db migrate                   # Execute pending migrations
 bun run src/index.ts db status --target shared    # Shared database
 
-# Data synchronization (7-stage pipeline)
-bun run src/index.ts sync judicial --category 051  # Judicial sync
-bun run src/index.ts sync law --import            # Law sync with DB import
-bun run src/index.ts sync law --force             # Force reprocess completed laws
+# Data synchronization (9-stage pipeline, auto DB upload + cleanup)
+bun run src/index.ts sync judicial --category 051  # Judicial sync (auto DB upload + cleanup)
+bun run src/index.ts sync law                      # Law sync (auto import + cleanup)
+bun run src/index.ts sync law --force              # Force reprocess completed laws
 ```
 
 See **`references/cli-commands.md`** for complete reference.
@@ -550,7 +550,8 @@ See **`references/scheduled-sync.md`** for complete setup.
 - **`references/jurislm-app.md`** - Web application architecture (Unified Agent)
 - **`references/cli-commands.md`** - Complete CLI reference
 - **`references/database-schema.md`** - Table relationships
-- **`references/judicial-sync.md`** - 7-stage pipeline
+- **`references/judicial-sync.md`** - 9-stage pipeline
+- **`references/pipeline-architecture.md`** - Pipeline architecture comparison (Judicial vs Law)
 - **`references/judicial-json-structure.md`** - Judicial JSON schema
 - **`references/worktree-docker.md`** - Port mapping
 - **`references/law-json-structure.md`** - MOJ API JSON schema
