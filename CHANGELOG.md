@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.5.0](https://github.com/terry90918/jurislm-plugins/compare/v1.4.0...v1.5.0) (2026-02-12)
+
+
+### Features
+
+* **github-release:** 新增 Husky pre-commit 設定與 5 個參考檔案 ([0f8b58e](https://github.com/terry90918/jurislm-plugins/commit/0f8b58e24d7579ffd25e740b4842fa3fa6e0a31f))
+* **lessons-learned:** 新增 3 個資料匯入經驗模式 (v1.7.0) ([accc138](https://github.com/terry90918/jurislm-plugins/commit/accc138d8e376c6d9056334bc972dcb284373cd0))
+* 新增模式 68 staging 防護 + jurislm-dev dashboard staging 文件 ([70d5822](https://github.com/terry90918/jurislm-plugins/commit/70d58223fe10d78834dcc39edae4670c617e7733))
+
+
+### Bug Fixes
+
+* **lessons-learned:** 同步更新 description 與模式數量 ([10bdb08](https://github.com/terry90918/jurislm-plugins/commit/10bdb08c6cf5b382341b13e831e65093d3aa7a86))
+* 更新 Dashboard dev URL dashboard-staging → dashboard-dev ([e2771ce](https://github.com/terry90918/jurislm-plugins/commit/e2771cefdd78855dd29296dad3acb313c0481bc9))
+
 ## [1.4.0](https://github.com/terry90918/jurislm-plugins/compare/v1.3.0...v1.4.0) (2026-02-09)
 
 
