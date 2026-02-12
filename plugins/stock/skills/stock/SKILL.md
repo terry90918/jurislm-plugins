@@ -13,6 +13,12 @@ description: This skill should be used when the user asks to develop features fo
 TWSE/Yahoo API → src/lib/ (fetch + 商業邏輯) → src/app/api/ (路由) → src/hooks/ (客戶端狀態) → src/components/ (UI)
 ```
 
+## Repository 現況（2026-02-12 掃描）
+
+- `src/app/api/**/route.ts`：約 69 個 API routes
+- `src/hooks/*.ts`：20 個 hooks 檔案
+- `tests/e2e/*.spec.ts`：14 個 E2E spec files
+
 ### 資料流模式
 
 | 層 | 職責 | 位置 |
@@ -139,14 +145,14 @@ export async function GET() {
 
 ### 單元測試（Vitest）
 
-- 1847 tests，coverage ≥ 95%
+- 以 `test()/it()` 掃描約 2000+ 測試案例（持續增加）
 - 測試檔案：`*.test.ts` 或 `__tests__/` 子目錄
 - Mocking：`vi.fn()` for fetch，`renderHook`/`waitFor`/`act` for hooks
 - 執行：`bun run test:run`（非 `bun test`）
 
 ### E2E 測試（Playwright）
 
-- 66 tests across 12 spec files
+- 14 個 spec files（測試案例數量依功能新增持續變動）
 - Auto mock fixture：`tests/e2e/fixtures/test-base.ts`（攔截 `**/api/**`）
 - Mock data：`tests/e2e/fixtures/mock-data.ts`
 - 全局預熱：`tests/e2e/global-setup.ts`（避免首次編譯超時）

@@ -92,8 +92,8 @@ JurisLM 台灣法律 AI 平台開發 Skill（3 個 skills）。
 
 **涵蓋：**
 - TWSE/Yahoo Finance API 整合模式
-- 47+ API endpoints 參考文件
-- 40+ Custom hooks 使用指南
+- 目前約 69 個 API routes 的設計與維護要點
+- 目前 20 個 hooks 的狀態管理與快取模式
 - Prisma 資料庫 schema
 - E2E 測試與單元測試策略
 

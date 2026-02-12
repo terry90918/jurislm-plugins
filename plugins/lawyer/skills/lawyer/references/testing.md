@@ -62,7 +62,7 @@ E2E_ADMIN_EMAIL=e2e-test@jurislm.com
 E2E_ADMIN_PASSWORD=E2ETest2026
 ```
 
-## 測試覆蓋範圍（90 項）
+## 測試覆蓋範圍（7 個 spec files + 1 個 setup）
 
 ### Admin 測試（5 個檔案）
 

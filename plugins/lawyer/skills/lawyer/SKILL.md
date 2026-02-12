@@ -51,7 +51,7 @@ lib/payload/queries.ts # Server-side Local API 查詢（8 個函式，皆有 try
 middleware.ts          # Staging HTTP Basic Auth（STAGING=true 啟用）
 migrations/            # DB 遷移檔（prodMigrations 自動執行）
 scripts/               # migrate-articles.ts、create-test-user.ts
-tests/e2e/             # 90 項 Playwright 測試
+tests/e2e/             # 7 個 Playwright spec files（另含 admin-setup）
 ```
 
 ## Payload CMS Collections
@@ -130,7 +130,7 @@ process.exit(0);
 ## E2E 測試
 
 - **框架**: Playwright 1.58.2
-- **測試數量**: 90 項（3 個 project: admin-setup, admin, frontend）
+- **測試規模**: 7 個 spec files + 1 個 setup 檔（admin-setup, admin, frontend 三個 project）
 - **認證共享**: `admin-setup` 登入一次 → `storageState` 共享給 `admin` tests
 - **Base URL**: `http://localhost:3001`
 

@@ -8,7 +8,7 @@
 
 - **Payload CMS** — Collection 設計、Slug 生成、Admin CSS 修復、importMap 白屏陷阱、prodMigrations
 - **部署工作流** — Coolify 環境設定、Staging/Production 部署、三層 Staging 保護
-- **E2E 測試** — Playwright 90 項測試的架構、陷阱與最佳實踐
+- **E2E 測試** — Playwright 測試架構、7 個 spec files 的維護重點與最佳實踐
 - **設計系統** — Sage green 色彩、LXGW WenKai TC 字體、深色模式、typography classes
 - **GitHub Actions** — Release Please 自動版本管理、Claude Code Review
 

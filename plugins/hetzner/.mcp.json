@@ -1,7 +1,7 @@
 {
   "hetzner": {
     "command": "npx",
-    "args": ["-y", "hetzner-mcp-server"],
+    "args": ["-y", "hetzner-mcp-server@1.0.0"],
     "env": {
       "HETZNER_API_TOKEN": "${HETZNER_API_TOKEN}"
     }

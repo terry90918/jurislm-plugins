@@ -18,7 +18,7 @@
       "name": "coolify",
       "source": "./plugins/coolify",
       "description": "Coolify MCP 伺服器，管理自託管 PaaS（35 個最佳化工具）",
-      "version": "1.3.2",
+      "version": "1.3.3",
       "author": {
         "name": "Terry Chen"
       }
@@ -27,7 +27,7 @@
       "name": "lawyer",
       "source": "./plugins/lawyer",
       "description": "劉尹惠律師事務所網站開發 Skill，涵蓋 Payload CMS、部署、測試工作流",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "author": {
         "name": "Terry Chen"
       }
@@ -36,7 +36,7 @@
       "name": "stock",
       "source": "./plugins/stock",
       "description": "台股看盤應用開發 Skill，涵蓋 TWSE/Yahoo API 整合、投資組合管理、E2E 測試指南",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "author": {
         "name": "Terry Chen"
       }
