@@ -5,7 +5,7 @@ description: This skill should be used when encountering bugs, debugging issues,
 
 # 跨專案開發經驗模式庫
 
-從實際踩坑中提煉的 66 個關鍵教訓與改進方案，按主題分類。每個模式包含問題描述、根因分析、正確解法。
+從實際踩坑中提煉的 68 個關鍵教訓與改進方案，按主題分類。每個模式包含問題描述、根因分析、正確解法。
 
 ---
 
@@ -1043,7 +1043,7 @@ serveStatic({ root: "/app/jurislm_dashboard/dist" })
 
 ---
 
-## K. 資料匯入與 Migration（3 個模式）
+## K. 資料匯入與 Migration（4 個模式）
 
 ### 模式 65：Migration 手動建表補登的 checksum 陷阱
 
